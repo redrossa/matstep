@@ -115,7 +115,7 @@ def to_ref(matrix: sp.Matrix, r=0, c=0, ops=[]):
                 return to_ref(matrix, r, c, ops)
         # didnt find any, so go on to the next column but with the same pivot row location
         return to_ref(matrix, r, c + 1, ops)
-    # if element at pivot location != 0 and != 1, divide row it by pivot value itself to obtain 1
+    # if element at pivot location != 0 and != 1, divide row by pivot value itself to obtain 1
     if p != 0 and p != 1:
         latex, matrix = row_multiply(matrix, r, 1/p)
         ops.append([row_multiply, r, 1 / p])
