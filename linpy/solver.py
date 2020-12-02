@@ -1,30 +1,19 @@
-from linpy.util import eq
+class Relation:
+    def __init__(self, ascii: str, latex: str):
+        self.ascii = ascii
+        self.latex = latex
+
+
+eq = Relation('==', '==')
+neq = Relation('!=', r'\neq')
+gt = Relation('>', '>')
+lt = Relation('<', '<')
+geq = Relation('>=', r'\geq')
+leq = Relation('<=', r'\leq')
 
 
 class Solver:
     def __init__(self, *args, **kwargs):
-        exp = None
-        rel = None
-        sol = None
-        is_exp = False
-
-        if len(args) == 1:
-            exp = args[0]
-            is_exp = True
-        elif len(args) == 2:
-            exp = args[0]
-            rel = eq
-            sol = args[2]
-        elif len(args) == 3:
-            exp = args[0]
-            rel = args[1]
-            sol = args[2]
-
-        if exp is None:
-            raise ValueError('Invalid argument')
-
-        self.exp = exp
-        self.rel = rel
-        self.sol = sol
-        self.is_exp = is_exp
-
+        self.exp = args[0]
+        self.rel = args[1]
+        self.sol = args[2]
