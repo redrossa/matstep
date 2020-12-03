@@ -4,7 +4,7 @@ class Relation:
         self.latex = latex
 
 
-eq = Relation('==', '==')
+eq = Relation('=', '=')
 neq = Relation('!=', r'\neq')
 gt = Relation('>', '>')
 lt = Relation('<', '<')
