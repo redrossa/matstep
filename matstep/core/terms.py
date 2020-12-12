@@ -139,8 +139,8 @@ class Monomial(Expression):
 
     def __lt__(self, other: 'Monomial') -> bool:
         return self.deg < other.deg if self.deg != other.deg \
-            else self.coeff > other.coeff if self.is_alike(other) \
-            else self.variables > other.variables  # assuming Monomial implementation sorts variables lexicographically
+            else self.coeff < other.coeff if self.is_alike(other) \
+            else self.variables < other.variables  # assuming Monomial implementation sorts variables lexicographically
 
     def __ge__(self, other: 'Monomial') -> bool:
         return self > other or self == other
