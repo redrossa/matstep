@@ -5,12 +5,15 @@ Matstep (linpy) is an extensible step-by-step symbolic computation library. This
 ### Project updates:
 
 Goals currently being worked on:
- - A step-by-step evaluator/simplifier for monomial operations.
+ - Division operation for terms and polynomials.
+ - Imaginary number class.
 
 Near future goals to implement:
- - A matrix class that represents an array of monomials or expressions of monomials. A matrix object will probably, like a monomial, have some degree of basis of expressions.
+ - A matrix class that represents an array of expressions. A matrix object will probably, like a term, have some degree of basis of expressions.
  - New expression operations for matrices.
  - A function class that gives the ability for defining (and getting) an output expression based on an input expression.
 
 Goals implemented:
- - A monomial class that represents in algebra a product of power of variables with coefficients. The monomial object must be able to be compared with each other based on their degree and coefficients. A monomial will be used as the basis of expressions.
+ - A term class that represents in algebra a product of power of variables with coefficients. A term object must be able to be compared with another based on their degree and coefficients. A term will be used as the basis of expressions.
+- A polynomial class, a subclass of `pymbolic.primitives.Sum` that manages only sums of terms. Useful for grouping together unlike terms, sorting them out, while also providing automatic combination of like terms. Together with the term class, it is a basis of expressions of matstep.
+- A step-by-step simplifier for term and polynomial addition, subtraction and multiplication
