@@ -126,7 +126,7 @@ class Term(Expression):
 
         return self.deg < other.deg if self.deg != other.deg \
             else self.coeff < other.coeff if self.is_alike(other) \
-            else self.variables < other.variables
+            else self.variables > other.variables
 
     def __gt__(self, other):
         if isinstance(other, int):
@@ -137,7 +137,7 @@ class Term(Expression):
 
         return self.deg > other.deg if self.deg != other.deg \
             else self.coeff > other.coeff if self.is_alike(other) \
-            else self.variables > other.variables
+            else self.variables < other.variables
 
     def __bool__(self):
         return not self.is_zero()
@@ -165,10 +165,12 @@ class Polynomial(Sum):
             return self + var(other.name)
 
         if isinstance(other, Term):
-            return Polynomial((*self.children, other))
+            tmp = tuple(t for t in combine_terms((*self.children, other)) if not t.is_zero())
+            return Term() if not tmp else tmp[0] if len(tmp) == 1 else Polynomial(tmp)
 
         if isinstance(other, Polynomial):
-            return Polynomial(self.children + other.children)
+            tmp = tuple(t for t in combine_terms((*self.children, *other.children)) if not t.is_zero())
+            return Term() if not tmp else tmp[0] if len(tmp) == 1 else Polynomial(tmp)
 
         return super(Polynomial, self).__add__(other)
     
