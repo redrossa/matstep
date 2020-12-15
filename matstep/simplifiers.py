@@ -5,7 +5,7 @@ from matstep.core import Term, Polynomial
 
 
 class StepSimplifyMapper(RecursiveMapper):
-    def map_term(self, expr):
+    def map_matstep_term(self, expr):
         return expr
 
     def map_matstep_polynomial(self, expr):
