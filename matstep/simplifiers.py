@@ -1,5 +1,5 @@
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Sum, Product
+from pymbolic.primitives import Sum
 
 from matstep.core import Term, Polynomial
 
@@ -12,8 +12,6 @@ class StepSimplifyMapper(RecursiveMapper):
         return expr
 
     def map_sum(self, expr):
-        from pymbolic.primitives import Sum
-
         flat = flattened_sum(expr.children)
 
         return sum(flat.children) if all(isinstance(c, (Term, Polynomial)) for c in flat.children) \
@@ -80,20 +78,3 @@ def flattened_sum(components):
         return done[0]
     else:
         return Sum(tuple(done))
-
-
-def simplify_step(expr):
-    try:
-        return expr.make_stepsimplifier()(expr)
-    except AttributeError:
-        return StepSimplifyMapper()(expr)
-
-
-def simplify_full(expr):
-    last_step = simplify_step(expr)
-    while True:
-        step = simplify_step(last_step)
-        if step == last_step:
-            break
-        last_step = step
-    return step
