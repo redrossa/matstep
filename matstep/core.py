@@ -1,7 +1,8 @@
 import matstep.util as util
 
-from pymbolic.primitives import Expression, Sum, Variable
+from pymbolic.primitives import Expression, Sum, Variable, QuotientBase
 
+from matstep import var
 from matstep.stringifiers import MatstepStringifyMapper
 
 
@@ -98,7 +99,10 @@ class Term(Expression):
 
     def __pow__(self, power):
         if isinstance(power, int):
-            return Term(self.coeff ** power, tuple((v[0], v[1] * power) for v in self.variables))
+            return self ** Term(power)
+
+        if isinstance(power, Term) and power.is_constant():
+            return Term(self.coeff ** power.coeff, tuple((v[0], v[1] * power.coeff) for v in self.variables))
 
         return super(Term, self).__pow__(power)
 
@@ -145,13 +149,12 @@ class Term(Expression):
     def make_stringifier(self, originating_stringifier=None):
         return MatstepStringifyMapper()
 
-    mapper_method = 'map_term'
+    mapper_method = 'map_matstep_term'
 
 
 class Polynomial(Sum):
     def __init__(self, terms):
         super(Polynomial, self).__init__(combine_terms(terms))
-        # self.children = combine_terms(terms)
         self.deg = self.children[0].deg
 
     def __getinitargs__(self):
@@ -236,10 +239,6 @@ class Polynomial(Sum):
         return StepSimplifyMapper()
     
     mapper_method = 'map_matstep_polynomial'
-
-
-def var(name):
-    return Term(1, ((name, 1), ))
 
 
 def combine_terms(terms):
