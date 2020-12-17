@@ -139,6 +139,14 @@ class TestTerm(unittest.TestCase, TermAssertions, PolyAssertions, CommutativeAss
                        self.assertPolyAttributes,
                        (core.Term(1, (('x', 2),)), core.Term(2, (('x', 1),))), 2)
 
+        # Test constant Term + 0 == 0 + Term -> constant Term
+        a, b = core.Term(1), core.Term(0)
+        self.assertAdd(a, b, self.assertTermEqual, self.assertConstantTerm, 1)
+
+        # Test variable Term + 0 == 0 + Term -> variable Term
+        a, b = core.Term(1, (('x', 1), )), core.Term(0)
+        self.assertAdd(a, b, self.assertTermEqual, self.assertTermAttributes, 1, (('x', 1), ), 1)
+
     def test_mul(self):
         # Test constant Term * int == int * Term -> constant Term
         a, b = self.arit_args['constterm_int']

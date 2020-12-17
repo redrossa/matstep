@@ -1,8 +1,7 @@
 import matstep.util as util
 
-from pymbolic.primitives import Expression, Sum, Variable, QuotientBase
+from pymbolic.primitives import Expression, Sum
 
-from matstep import var
 from matstep.stringifiers import MatstepStringifyMapper
 
 
@@ -41,76 +40,32 @@ class Term(Expression):
         return Term(abs(self.coeff), self.variables)
 
     def __add__(self, other):
-        if isinstance(other, int):
-            return self + Term(other)
-
-        if isinstance(other, Variable):
-            return self + var(other.name)
-
-        if isinstance(other, Term):
-            return Term(self.coeff + other.coeff, self.variables) if self.is_alike(other) else Polynomial((self, other))
-
-        if isinstance(other, Polynomial):
-            return Polynomial((self, *other.children))
-
-        return super(Term, self).__add__(other)
+        other = termify(other)
+        return NotImplemented if not isinstance(other, Term) else Polynomial((self, other))
 
     def __radd__(self, other):
-        if isinstance(other, int):
-            return Term(other) + self
-
-        if isinstance(other, Variable):
-            return var(other.name) + self
-        
-        return super(Term, self).__radd__(other)
+        other = termify(other)
+        return other + self
     
     def __sub__(self, other):
-        return self - var(other.name) if isinstance(other, Variable) else self + (-other)
+        return self + (-self)
     
     def __rsub__(self, other):
-        return other + (-self)
+        return (-self) + other
     
     def __mul__(self, other):
-        if isinstance(other, int):
-            return self * Term(other)
-        
-        if isinstance(other, Variable):
-            return self * var(other.name)
-        
-        if isinstance(other, Term):
-            return Term(self.coeff * other.coeff, self.variables + other.variables)
-        
-        if isinstance(other, Polynomial):
-            return Polynomial(tuple(self * t for t in other.children))
-        
-        return super(Term, self).__mul__(other)
+        other = termify(other)
+        return NotImplemented if not isinstance(other, Term) \
+            else Term(self.coeff * other.coeff, self.variables + other.variables)
     
     def __rmul__(self, other):
-        if isinstance(other, int):
-            return Term(other) * self
-        
-        if isinstance(other, Variable):
-            return var(other.name) * self
-        
-        super(Term, self).__rmul__(other)
+        other = termify(other)
+        return other * self
 
     def __pow__(self, power):
-        if isinstance(power, int):
-            return self ** Term(power)
-
-        if isinstance(power, Term) and power.is_constant():
-            return Term(self.coeff ** power.coeff, tuple((v[0], v[1] * power.coeff) for v in self.variables))
-
-        return super(Term, self).__pow__(power)
-
-    def is_equal(self, other):
-        if isinstance(other, int):
-            other = Term(other)
-
-        if isinstance(other, Variable):
-            other = var(other.name)
-
-        return self.coeff == other.coeff and self.variables == other.variables
+        power = termify(power)
+        return NotImplemented if not isinstance(power, Term) or (isinstance(power, Term) and not power.is_constant()) \
+                else Term(self.coeff ** power.coeff, tuple((v[0], v[1] * power.coeff) for v in self.variables))
 
     def __le__(self, other):
         return self < other or self == other
@@ -119,24 +74,16 @@ class Term(Expression):
         return self > other or self == other
 
     def __lt__(self, other):
-        if isinstance(other, int):
-            other = Term(other)
-
-        if isinstance(other, Variable):
-            other = var(other.name)
-
-        return self.deg < other.deg if self.deg != other.deg \
+        other = termify(other)
+        return NotImplemented if not isinstance(other, Term) \
+            else self.deg < other.deg if self.deg != other.deg \
             else self.coeff < other.coeff if self.is_alike(other) \
             else self.variables > other.variables
 
     def __gt__(self, other):
-        if isinstance(other, int):
-            other = Term(other)
-
-        if isinstance(other, Variable):
-            other = var(other.name)
-
-        return self.deg > other.deg if self.deg != other.deg \
+        other = termify(other)
+        return NotImplemented if not isinstance(other, Term) \
+            else self.deg > other.deg if self.deg != other.deg \
             else self.coeff > other.coeff if self.is_alike(other) \
             else self.variables < other.variables
 
@@ -150,68 +97,40 @@ class Term(Expression):
 
 
 class Polynomial(Sum):
+    def __new__(cls, terms):
+        terms = combine_terms(terms)
+        return terms[0] if len(terms) == 1 else super(Polynomial, cls).__new__(cls)
+
     def __init__(self, terms):
         super(Polynomial, self).__init__(combine_terms(terms))
         self.deg = self.children[0].deg
 
     def __getinitargs__(self):
         return self.children,
-        
+
     def __add__(self, other):
-        if isinstance(other, int):
-            return self + Term(other)
+        other = termify(other)
+        return Polynomial((*self.children, other)) if isinstance(other, Term) \
+            else Polynomial((*self.children, *other.children)) if isinstance(other, Polynomial) \
+            else NotImplemented
 
-        if isinstance(other, Variable):
-            return self + var(other.name)
-
-        if isinstance(other, Term):
-            tmp = tuple(t for t in combine_terms((*self.children, other)) if not t.is_zero())
-            return Term() if not tmp else tmp[0] if len(tmp) == 1 else Polynomial(tmp)
-
-        if isinstance(other, Polynomial):
-            tmp = tuple(t for t in combine_terms((*self.children, *other.children)) if not t.is_zero())
-            return Term() if not tmp else tmp[0] if len(tmp) == 1 else Polynomial(tmp)
-
-        return super(Polynomial, self).__add__(other)
-    
     def __radd__(self, other):
-        if isinstance(other, int):
-            return Term(other) + self
-        
-        if isinstance(other, Variable):
-            return var(other.name) + self
-        
-        return super(Polynomial, self).__radd__(other)
+        return self + other
     
     def __sub__(self, other):
-        return self - var(other.name) if isinstance(other, Variable) else self + (-other)
+        return self + (-other)
     
     def __rsub__(self, other):
-        return other + (-self)
+        return (-self) + other
     
     def __mul__(self, other):
-        if isinstance(other, int):
-            return self * Term(other)
-        
-        if isinstance(other, Variable):
-            return self * var(other.name)
-        
-        if isinstance(other, Term):
-            return Polynomial(tuple(t * other for t in self.children))
-        
-        if isinstance(other, Polynomial):
-            return Polynomial(tuple(t * s for t in self.children for s in other.children))
-        
-        return super(Polynomial, self).__mul__(other)
-    
+        other = termify(other)
+        return Polynomial(tuple(t * other for t in self.children)) if isinstance(other, Term) \
+            else Polynomial(tuple(t * s for t in self.children for s in other.children)) if isinstance(other, Polynomial) \
+            else NotImplemented
+
     def __rmul__(self, other):
-        if isinstance(other, int):
-            return Term(other) * self
-        
-        if isinstance(other, Variable):
-            return var(other.name) * self
-        
-        super(Polynomial, self).__rmul__(other)
+        return self * other
 
     def __len__(self):
         return len(self.children)
@@ -223,10 +142,16 @@ class Polynomial(Sum):
         return self > other or self == other
 
     def __lt__(self, other):
-        return self.children < other.children if len(self) == len(other) else len(self) < len(other)
+        other = termify(other)
+        return NotImplemented if not isinstance(other, Polynomial) \
+            else self.children < other.children if len(self) == len(other) \
+            else len(self) < len(other)
 
     def __gt__(self, other):
-        return self.children > other.children if len(self) == len(other) else len(self) > len(other)
+        other = termify(other)
+        return NotImplemented if not isinstance(other, Polynomial) \
+            else self.children > other.children if len(self) == len(other) \
+            else len(self) > len(other)
 
     def make_stringifier(self, originating_stringifier=None):
         return MatstepStringifyMapper(originating_stringifier)
@@ -238,7 +163,12 @@ class Polynomial(Sum):
     mapper_method = 'map_matstep_polynomial'
 
 
+def termify(o):
+    return Term(o) if isinstance(o, int) else o
+
+
 def combine_terms(terms):
     return tuple(Term(coeff, variables) for variables, coeff
-                 in util.accumulate(terms, lambda t: t.variables, lambda t: t.coeff, reverse=True))
+                 in util.accumulate(terms, lambda t: t.variables, lambda t: t.coeff, reverse=True)
+                 if coeff != 0)
 
