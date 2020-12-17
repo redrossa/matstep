@@ -73,7 +73,7 @@ class Term(Expression):
         except ValueError:
             pass
         return NotImplemented if not isinstance(power, int) \
-                else Term(self.coeff ** power.coeff, tuple((v[0], v[1] * power.coeff) for v in self.variables))
+            else Term(self.coeff ** power.coeff, tuple((v[0], v[1] * power.coeff) for v in self.variables))
 
     def __le__(self, other):
         return self < other or self == other
