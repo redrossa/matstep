@@ -36,6 +36,11 @@ class Term(Expression):
     def is_alike(self, other):
         return self.variables == other.variables
 
+    def __int__(self):
+        if not self.is_constant():
+            raise ValueError
+        return self.coeff
+
     def __abs__(self):
         return Term(abs(self.coeff), self.variables)
 
@@ -63,8 +68,11 @@ class Term(Expression):
         return other * self
 
     def __pow__(self, power):
-        power = termify(power)
-        return NotImplemented if not isinstance(power, Term) or (isinstance(power, Term) and not power.is_constant()) \
+        try:
+            power = int(power)
+        except ValueError:
+            pass
+        return NotImplemented if not isinstance(power, int) \
                 else Term(self.coeff ** power.coeff, tuple((v[0], v[1] * power.coeff) for v in self.variables))
 
     def __le__(self, other):
