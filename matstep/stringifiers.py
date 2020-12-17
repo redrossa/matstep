@@ -15,4 +15,3 @@ class MatstepStringifyMapper(StringifyMapper):
             enclosing_prec,
             PREC_SUM
         )
-        # return self.map_sum(expr, enclosing_prec, *args, **kwargs)
