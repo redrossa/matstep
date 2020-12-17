@@ -99,7 +99,11 @@ class Term(Expression):
         return not self.is_zero()
 
     def make_stringifier(self, originating_stringifier=None):
-        return MatstepStringifyMapper()
+        return MatstepStringifyMapper(originating_stringifier)
+
+    def make_stepsimplifier(self):
+        from matstep.simplifiers import StepSimplifyMapper
+        return StepSimplifyMapper
 
     mapper_method = 'map_matstep_term'
 
@@ -107,10 +111,14 @@ class Term(Expression):
 class Polynomial(Sum):
     def __new__(cls, terms):
         terms = combine_terms(terms)
-        return terms[0] if len(terms) == 1 else super(Polynomial, cls).__new__(cls)
+        self = terms[0] if len(terms) == 1 else super(Polynomial, cls).__new__(cls)
+        if isinstance(self, Polynomial):
+            self.__init__(terms)
+        return self
 
     def __init__(self, terms):
-        super(Polynomial, self).__init__(combine_terms(terms))
+        if not hasattr(self, 'children'):
+            super(Polynomial, self).__init__(terms)
         self.deg = self.children[0].deg
 
     def __getinitargs__(self):
