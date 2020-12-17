@@ -100,6 +100,14 @@ class TestTerm(unittest.TestCase, TermAssertions, PolyAssertions, CommutativeAss
         actual = core.Term(1, (('x', 2), ('y', 4), ('x', 4), ('a', 4), ('y', 1)))
         self.assertTermAttributes(actual, 1, (('a', 4), ('x', 6), ('y', 5)), 15)
 
+        # Test coeff != 0, variables with 0 power -> 0 power variables discarded
+        actual = core.Term(1, (('x', 0), ))
+        self.assertConstantTerm(actual, 1)
+
+        # Test coeff != 0, variables sum power == 0 -> 0 power variables discarded
+        actual = core.Term(1, (('x', 1), ('x', -1)))
+        self.assertConstantTerm(actual, 1)
+
     def test_add(self):
         # Test constant Term + int == int + Term -> constant Term
         a, b = self.arit_args['constterm_int']

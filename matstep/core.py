@@ -11,13 +11,10 @@ class Term(Expression):
         self.coeff = coeff
 
         variables = () if not self.coeff or variables is None \
-            else variables if len(variables) == 1 \
-            else tuple(util.accumulate(variables, lambda v: v[0], lambda v: v[1]))
+            else tuple(v for v in util.accumulate(variables, lambda v: v[0], lambda v: v[1]) if v[1] != 0)
 
         self.variables = variables
-        self.deg = -1 if not self.coeff \
-            else self.variables[0][1] if len(variables) == 1 \
-            else sum(v[1] for v in self.variables)
+        self.deg = -1 if not self.coeff else sum(v[1] for v in self.variables)
 
     def __getinitargs__(self):
         return self.coeff, self.variables
