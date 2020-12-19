@@ -57,19 +57,29 @@ class StepSimplifyMapper(RecursiveMapper):
 
 
 class StepSimplifier(RecursiveMapper):
-    def map_foreign(self, expr, *args, **kwargs):
-        return expr
-
-    def eval_binary_expr(self, expr, op_func, *args, **kwargs):
+    def eval_unary_expr(self, expr, op_func, *args, **kwargs):
         expr_type = type(expr)
-        operands = expr.__getinitargs__()
+        op = expr.__getinitargs__()[0]
 
         try:
-            result = op_func(operands[0], operands[1])
+            result = op_func(op)
             if result == expr:
                 raise TypeError
         except TypeError:
-            return expr_type(self.rec(operands[0], *args, **kwargs), self.rec(operands[1], *args, **kwargs))
+            return expr_type(self.rec(op, *args, *kwargs))
+
+        return result
+
+    def eval_binary_expr(self, expr, op_func, *args, **kwargs):
+        expr_type = type(expr)
+        op1, op2 = expr.__getinitargs__()
+
+        try:
+            result = op_func(op1, op2)
+            if result == expr:
+                raise TypeError
+        except TypeError:
+            return expr_type(self.rec(op1, *args, **kwargs), self.rec(op2, *args, **kwargs))
 
         return result
 
@@ -89,6 +99,9 @@ class StepSimplifier(RecursiveMapper):
 
         return expr_type(tuple(self.rec(c, *args, **kwargs) for c in operands)) if result == expr else result
 
+    def map_call(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a(b), *args, **kwargs)
+
     def map_sum(self, expr, *args, **kwargs):
         return self.eval_multichild_expr(expr, lambda a, b: a + b, *args, **kwargs)
 
@@ -106,6 +119,36 @@ class StepSimplifier(RecursiveMapper):
 
     def map_power(self, expr, *args, **kwargs):
         return self.eval_binary_expr(expr, lambda a, b: a ** b, *args, **kwargs)
+
+    def map_left_shift(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a << b, *args, **kwargs)
+
+    def map_right_shift(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a >> b, *args, **kwargs)
+
+    def map_bitwise_not(self, expr, *args, **kwargs):
+        return self.eval_unary_expr(expr, lambda a: ~a, *args, **kwargs)
+
+    def map_bitwise_or(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a | b, *args, **kwargs)
+
+    def map_bitwise_xor(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a ^ b, *args, **kwargs)
+
+    def map_bitwise_and(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a & b, *args, **kwargs)
+
+    def map_logical_not(self, expr, *args, **kwargs):
+        return self.eval_unary_expr(expr, lambda a: not a, *args, **kwargs)
+
+    def map_logical_or(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a or b, *args, **kwargs)
+
+    def map_logical_and(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a and b, *args, **kwargs)
+
+    def map_foreign(self, expr, *args, **kwargs):
+        return expr
 
 
 def flattened_sum(components):
