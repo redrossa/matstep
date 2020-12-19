@@ -1,5 +1,6 @@
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Sum
+from pymbolic.primitives import Sum, Product, Quotient
+
 
 from matstep.core import Term, Polynomial
 
@@ -53,6 +54,58 @@ class StepSimplifyMapper(RecursiveMapper):
 
     def map_foreign(self, expr, *args, **kwargs):
         return expr.make_stepsimplifier()(expr, *args, **kwargs)
+
+
+class StepSimplifier(RecursiveMapper):
+    def map_foreign(self, expr, *args, **kwargs):
+        return expr
+
+    def eval_binary_expr(self, expr, op_func, *args, **kwargs):
+        expr_type = type(expr)
+        operands = expr.__getinitargs__()
+
+        try:
+            result = op_func(operands[0], operands[1])
+            if result == expr:
+                raise TypeError
+        except TypeError:
+            return expr_type(self.rec(operands[0], *args, **kwargs), self.rec(operands[1], *args, **kwargs))
+
+        return result
+
+    def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
+        i = 0
+        operands = expr.__getinitargs__()[0]
+        result = operands[i]
+        expr_type = type(expr)
+
+        try:
+            for c in operands[i+1:]:
+                result = op_func(result, c)
+                i += 1
+        except TypeError:
+            return expr_type((self.rec(result, *args, **kwargs),
+                              *tuple(self.rec(c, *args, **kwargs) for c in operands[i:])))
+
+        return expr_type(tuple(self.rec(c, *args, **kwargs) for c in operands)) if result == expr else result
+
+    def map_sum(self, expr, *args, **kwargs):
+        return self.eval_multichild_expr(expr, lambda a, b: a + b, *args, **kwargs)
+
+    def map_product(self, expr, *args, **kwargs):
+        return self.eval_multichild_expr(expr, lambda a, b: a * b, *args, **kwargs)
+
+    def map_quotient(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a / b, *args, **kwargs)
+
+    def map_floor_div(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a // b, *args, **kwargs)
+
+    def map_reminder(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a % b, *args, **kwargs)
+
+    def map_power(self, expr, *args, **kwargs):
+        return self.eval_binary_expr(expr, lambda a, b: a ** b, *args, **kwargs)
 
 
 def flattened_sum(components):
