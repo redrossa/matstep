@@ -62,7 +62,7 @@ class StepSimplifier(RecursiveMapper):
         op = expr.__getinitargs__()[0]
 
         try:
-            result = op_func(op)
+            result = op_func(op, *args, **kwargs)
             if result == expr:
                 raise TypeError
         except TypeError:
@@ -75,7 +75,7 @@ class StepSimplifier(RecursiveMapper):
         op1, op2 = expr.__getinitargs__()
 
         try:
-            result = op_func(op1, op2)
+            result = op_func(op1, op2, *args, **kwargs)
             if result == expr:
                 raise TypeError
         except TypeError:
@@ -91,8 +91,9 @@ class StepSimplifier(RecursiveMapper):
 
         try:
             for c in operands[i+1:]:
-                result = op_func(result, c)
                 i += 1
+                result = op_func(result, c, *args, **kwargs)
+
         except TypeError:
             return expr_type((self.rec(result, *args, **kwargs),
                               *tuple(self.rec(c, *args, **kwargs) for c in operands[i:])))
@@ -100,52 +101,52 @@ class StepSimplifier(RecursiveMapper):
         return expr_type(tuple(self.rec(c, *args, **kwargs) for c in operands)) if result == expr else result
 
     def map_call(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a(b), *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a(b), *args, **kwargs)
 
     def map_sum(self, expr, *args, **kwargs):
-        return self.eval_multichild_expr(expr, lambda a, b: a + b, *args, **kwargs)
+        return self.eval_multichild_expr(expr, lambda a, b, *args, **kwargs: a + b, *args, **kwargs)
 
     def map_product(self, expr, *args, **kwargs):
-        return self.eval_multichild_expr(expr, lambda a, b: a * b, *args, **kwargs)
+        return self.eval_multichild_expr(expr, lambda a, b, *args, **kwargs: a * b, *args, **kwargs)
 
     def map_quotient(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a / b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a / b, *args, **kwargs)
 
     def map_floor_div(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a // b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a // b, *args, **kwargs)
 
     def map_reminder(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a % b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a % b, *args, **kwargs)
 
     def map_power(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a ** b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a ** b, *args, **kwargs)
 
     def map_left_shift(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a << b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a << b, *args, **kwargs)
 
     def map_right_shift(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a >> b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a >> b, *args, **kwargs)
 
     def map_bitwise_not(self, expr, *args, **kwargs):
-        return self.eval_unary_expr(expr, lambda a: ~a, *args, **kwargs)
+        return self.eval_unary_expr(expr, lambda a, *args, **kwargs: ~a, *args, **kwargs)
 
     def map_bitwise_or(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a | b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a | b, *args, **kwargs)
 
     def map_bitwise_xor(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a ^ b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a ^ b, *args, **kwargs)
 
     def map_bitwise_and(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a & b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a & b, *args, **kwargs)
 
     def map_logical_not(self, expr, *args, **kwargs):
-        return self.eval_unary_expr(expr, lambda a: not a, *args, **kwargs)
+        return self.eval_unary_expr(expr, lambda a, *args, **kwargs: not a, *args, **kwargs)
 
     def map_logical_or(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a or b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a or b, *args, **kwargs)
 
     def map_logical_and(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b: a and b, *args, **kwargs)
+        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a and b, *args, **kwargs)
 
     def map_foreign(self, expr, *args, **kwargs):
         return expr
