@@ -15,3 +15,8 @@ class MatstepStringifyMapper(StringifyMapper):
             enclosing_prec,
             PREC_SUM
         )
+
+
+class Stringifier(StringifyMapper):
+    def map_foreign(self, expr, *args, **kwargs):
+        return str(expr)
