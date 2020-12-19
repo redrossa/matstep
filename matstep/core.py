@@ -1,3 +1,9 @@
+from itertools import zip_longest
+
+from sympy import ZZ
+from sympy.polys.densebasic import dmp_from_dict, dmp_to_dict
+from sympy.polys.factortools import dmp_factor_list
+
 import matstep.util as util
 
 from pymbolic.primitives import Expression, Sum
@@ -105,10 +111,38 @@ class Term(Expression):
         from matstep.simplifiers import StepSimplifyMapper
         return StepSimplifyMapper
 
+    def count_pows(self, names=None):
+        if names is None:
+            return tuple(v[1] for v in self.variables)
+
+        from collections import OrderedDict
+        names = OrderedDict.fromkeys(names, 0)
+        for name, power in self.variables:
+            names[name] += power
+        return tuple(names.values())
+
     mapper_method = 'map_matstep_term'
 
 
 class Polynomial(Sum):
+    @staticmethod
+    def as_dict(p):
+        return {t.count_pows(p.var_names): t.coeff for t in p.children}
+
+    @staticmethod
+    def as_list(p):
+        return dmp_from_dict(Polynomial.as_dict(p), not p.is_univariate(), ZZ)
+
+    @staticmethod
+    def from_dict(d, names):
+        terms = tuple(Term(coeff, tuple((name, power) for name, power in zip_longest(names, powers, fillvalue=0)))
+                      for powers, coeff in d.items())
+        return Polynomial(terms)
+
+    @staticmethod
+    def from_list(ls, names):
+        return Polynomial.from_dict(dmp_to_dict(ls, type(ls[0]) == list, ZZ), names)
+
     def __new__(cls, terms):
         terms = combine_terms(terms)
         self = terms[0] if len(terms) == 1 else super(Polynomial, cls).__new__(cls)
@@ -118,11 +152,16 @@ class Polynomial(Sum):
 
     def __init__(self, terms):
         if not hasattr(self, 'children'):
+            from collections import OrderedDict
             super(Polynomial, self).__init__(terms)
+            self.var_names = OrderedDict.fromkeys([v[0] for t in self.children for v in t.variables]).keys()
         self.deg = self.children[0].deg
 
     def __getinitargs__(self):
         return self.children,
+
+    def is_univariate(self):
+        return len(self.var_names) == 1
 
     def __add__(self, other):
         other = termify(other)
