@@ -1,6 +1,6 @@
 import unittest
 
-from pymbolic.primitives import Sum, Product, Quotient, BitwiseNot, Call, Variable
+from pymbolic.primitives import Sum, Quotient, BitwiseNot, Call, Variable
 
 from matstep.simplifiers import StepSimplifier
 
@@ -124,17 +124,33 @@ class TestStepSimplifier(unittest.TestCase):
         expected = Sum((3, 7, 11))
         self.assertEqual(actual, expected)
 
-    def test_eval_call_expr(self):
-        # Test flat: f(2) -> f(2)
+    def test_map_call(self):
+        """
+        Tests the functionality of `matstep.simplifiers.StepSimplifier.map_call`.
+        """
+
+        # Test flat pseudo-function: f(2) -> f(2)
         expr = Call(Variable('f'), (2, ))
         actual = self.simplifier(expr)
         expected = expr
         self.assertEqual(actual, expected)
 
-        # Test flat many: f(2, 3) -> f(2, 3)
+        # Test flat pseudo-function many: f(2, 3) -> f(2, 3)
         expr = Call(Variable('f'), (2, 3))
         actual = self.simplifier(expr)
         expected = expr
+        self.assertEqual(actual, expected)
+
+        # Test simplification of argument before call: f(2 + 3) -> f(5)
+        expr = Call(Variable('f'), (Sum((2, 3)), ))
+        actual = self.simplifier(expr)
+        expected = Call(Variable('f'), (5, ))
+        self.assertEqual(actual, expected)
+
+        # Test simplification of argument before call many: f(2 + 3, 2 + 3) -> f(5, 5)
+        expr = Call(Variable('f'), (Sum((2, 3)), Sum((2, 3))))
+        actual = self.simplifier(expr)
+        expected = Call(Variable('f'), (5, 5))
         self.assertEqual(actual, expected)
 
 
