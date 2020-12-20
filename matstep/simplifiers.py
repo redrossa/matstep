@@ -1,6 +1,5 @@
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Sum, Product, Quotient
-
+from pymbolic.primitives import Sum, Expression
 
 from matstep.core import Term, Polynomial
 
@@ -59,7 +58,7 @@ class StepSimplifyMapper(RecursiveMapper):
 class StepSimplifier(RecursiveMapper):
     def eval_unary_expr(self, expr, op_func, *args, **kwargs):
         expr_type = type(expr)
-        op = expr.__getinitargs__()[0]
+        op, = expr.__getinitargs__()
 
         try:
             result = op_func(op, *args, **kwargs)
@@ -84,24 +83,31 @@ class StepSimplifier(RecursiveMapper):
         return result
 
     def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
-        i = 0
-        operands = expr.__getinitargs__()[0]
-        result = operands[i]
         expr_type = type(expr)
+        operands = expr.__getinitargs__()[0]  # it returns a tuple of its attributes (only children which is a tuple)
+        last_operand = None
+        result = []
 
-        try:
-            for c in operands[i+1:]:
-                i += 1
-                result = op_func(result, c, *args, **kwargs)
+        for operand in operands:
+            eval_operand = self.rec(operand, *args, **kwargs)
+            try:
+                if isinstance(operand, Expression) or isinstance(last_operand, Expression):
+                    raise TypeError
+                new_operand = op_func(result.pop(), eval_operand, *args, **kwargs)
+            except (TypeError, IndexError):
+                new_operand = eval_operand
+            result.append(new_operand)
+            last_operand = operand
 
-        except TypeError:
-            return expr_type((self.rec(result, *args, **kwargs),
-                              *tuple(self.rec(c, *args, **kwargs) for c in operands[i:])))
-
-        return expr_type(tuple(self.rec(c, *args, **kwargs) for c in operands)) if result == expr else result
+        return result[0] if len(result) == 1 else expr_type(tuple(result))
 
     def map_call(self, expr, *args, **kwargs):
-        return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a(b), *args, **kwargs)
+        expr_type = type(expr)
+        func, params = expr.__getinitargs__()
+        eval_params = tuple(self.rec(p, *args, **kwargs) for p in params)
+
+        return expr_type(func, eval_params) if any(isinstance(p, Expression) for p in eval_params) \
+            else func(*eval_params)
 
     def map_sum(self, expr, *args, **kwargs):
         return self.eval_multichild_expr(expr, lambda a, b, *args, **kwargs: a + b, *args, **kwargs)
