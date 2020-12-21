@@ -5,12 +5,11 @@ Matstep (linpy) is an extensible step-by-step symbolic computation library. This
 ### Project updates:
 
 Goals currently being worked on:
-
-- A function class that gives the ability for defining (and getting) an output expression based on an input expression.
+- A matrix class that represents an array of expressions. A matrix object will probably, like a term, have some degree of basis of expressions.
 
 Near future goals to implement:
- - A matrix class that represents an array of expressions. A matrix object will probably, like a term, have some degree of basis of expressions.
- - New expression operations for matrices.
+- New expression operations for matrices.
 
 Goals implemented:
 - A step-by-step expression simplifier that can evaluate any operable objects (i.e. those that overload Python operators)
+- A function class that gives the ability for defining (and getting) an output expression based on an input expression.
