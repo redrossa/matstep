@@ -3,7 +3,33 @@ from pymbolic.primitives import Expression
 
 
 class StepSimplifier(RecursiveMapper):
+    """
+    A step-by-step simplifier for expressions constructed from
+    `pymbolic.primitives.Expression` instances. Non-pymbolic
+    objects are operands of the expression tree therefore at
+    the most simplied form, an expression returns a non-pymbolic
+    object. The non-pymbolic operands of an expression should
+    overload the necessary Python operators.
+    """
+
     def eval_unary_expr(self, expr, op_func, *args, **kwargs):
+        """
+        A helper method for evaluating single-operand `pymbolic
+        .primitives.Expression` instances.
+
+        :param expr: the single-operand `pymbolic.primitives.
+        Expression` instance
+
+        :param op_func: the corresponding operation associated
+        with `expr`
+
+        :return: an evaluated, non-pymbolic object as a result
+        of applying `op_func` to the operand of `expr` if the
+        operand can not be simplified further otherwise a
+        pymbolic object of type `type(expr)` with a simplified
+        operand
+        """
+
         expr_type = type(expr)
         op, = expr.__getinitargs__()
 
@@ -17,6 +43,23 @@ class StepSimplifier(RecursiveMapper):
         return result
 
     def eval_binary_expr(self, expr, op_func, *args, **kwargs):
+        """
+        A helper method for evaluating double-operand `pymbolic
+        .primitives.Expression` instances.
+
+        :param expr: the double-operand `pymbolic.primitives.
+        Expression` instance
+
+        :param op_func: the corresponding operation associated
+        with `expr`
+
+        :return: an evaluated, non-pymbolic object as a result
+        of applying `op_func` to the operands of `expr` together
+        if the any of the operands can not be simplified further
+        otherwise a pymbolic object of type `type(expr)` with
+        the simplified operands
+        """
+
         expr_type = type(expr)
         op1, op2 = expr.__getinitargs__()
 
@@ -30,6 +73,28 @@ class StepSimplifier(RecursiveMapper):
         return result
 
     def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
+        """
+        A helper method for evaluating multi-operand `pymbolic
+        .primitives.Expression` instances.
+
+        The multi-operand pymbolic expression follows the convention
+        of using a single tuple to store the operands, an important
+        difference when creating a new instance of the given expression
+        type.
+
+        :param expr: the multi-operand `pymbolic.primitives.
+        Expression` instance
+
+        :param op_func: the corresponding operation associated
+        with `expr`
+
+        :return: an evaluated, non-pymbolic object as a result
+        of applying `op_func` to the operands of `expr` together
+        if the any of the operands can not be simplified further
+        otherwise a pymbolic object of type `type(expr)` with
+        the simplified operands
+        """
+
         expr_type = type(expr)
         operands = expr.__getinitargs__()[0]  # it returns a tuple of its attributes (only children which is a tuple)
         last_operand = None
@@ -49,6 +114,13 @@ class StepSimplifier(RecursiveMapper):
         return result[0] if len(result) == 1 else expr_type(tuple(result))
 
     def map_call(self, expr, *args, **kwargs):
+        """
+        Simplifies the given `pymbolic.primitives.Call` instance.
+
+        The function operand will not be called until all the parameter
+        operands are simplified.
+        """
+
         expr_type = type(expr)
         func, params = expr.__getinitargs__()
         eval_params = tuple(self.rec(p, *args, **kwargs) for p in params)
