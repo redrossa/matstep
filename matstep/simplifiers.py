@@ -125,7 +125,7 @@ class StepSimplifier(RecursiveMapper):
         func, params = expr.__getinitargs__()
         eval_params = tuple(self.rec(p, *args, **kwargs) for p in params)
 
-        return expr_type(func, eval_params) if any(isinstance(p, Expression) for p in eval_params) \
+        return expr_type(func, eval_params) if any(isinstance(p, Expression) for p in params) \
             else func(*eval_params)
 
     def map_sum(self, expr, *args, **kwargs):
