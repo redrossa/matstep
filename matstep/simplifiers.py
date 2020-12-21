@@ -18,11 +18,15 @@ class StepSimplifier(RecursiveMapper):
         A helper method for evaluating single-operand `pymbolic
         .primitives.Expression` instances.
 
+        Takes the only child attribute of the given unary `pymbolic
+        .primitives.Expression` instance and passes it to the
+        given op_func and returns the result.
+
         :param expr: the single-operand `pymbolic.primitives.
         Expression` instance
 
-        :param op_func: the corresponding operation associated
-        with `expr`
+        :param op_func: at least a single-argument function
+        corresponding to the operation associated with `expr`
 
         :return: an evaluated, non-pymbolic object as a result
         of applying `op_func` to the operand of `expr` if the
@@ -48,14 +52,18 @@ class StepSimplifier(RecursiveMapper):
         A helper method for evaluating double-operand `pymbolic
         .primitives.Expression` instances.
 
+        Takes the two children attributes of the given binary
+        `pymbolic.primitives.Expression` instance and passes them
+        to the given op_func and returns the result.
+
         :param expr: the double-operand `pymbolic.primitives.
         Expression` instance
 
-        :param op_func: the corresponding operation associated
-        with `expr`
+        :param op_func: at least a double-argument function
+        corresponding to the operation associated with `expr`
 
         :return: an evaluated, non-pymbolic object as a result
-        of applying `op_func` to the operands of `expr` together
+        of applying `op_func` to the two operands of `expr` together
         if the any of the operands can not be simplified further
         otherwise a pymbolic object of type `type(expr)` with
         the simplified operands
@@ -78,6 +86,10 @@ class StepSimplifier(RecursiveMapper):
         A helper method for evaluating multi-operand `pymbolic
         .primitives.Expression` instances.
 
+        Takes the tuple children attribute of the given binary `pymbolic
+        .primitives.Expression` instance and apply a reduction operation
+        on the tuple elements based on the given function.
+
         The multi-operand pymbolic expression follows the convention
         of using a single tuple to store the operands, an important
         difference when creating a new instance of the given expression
@@ -86,8 +98,8 @@ class StepSimplifier(RecursiveMapper):
         :param expr: the multi-operand `pymbolic.primitives.
         Expression` instance
 
-        :param op_func: the corresponding operation associated
-        with `expr`
+        :param op_func: a double-argument function corresponding
+        to the operation associated with `expr`
 
         :return: an evaluated, non-pymbolic object as a result
         of applying `op_func` to the operands of `expr` together
