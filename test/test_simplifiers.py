@@ -129,25 +129,25 @@ class TestStepSimplifier(unittest.TestCase):
         Tests the functionality of `matstep.simplifiers.StepSimplifier.map_call`.
         """
 
-        # Test flat pseudo-function: f(2) -> f(2)
+        # Test flat pseudo-function one arg: f(2) -> f(2)
         expr = Call(Variable('f'), (2, ))
         actual = self.simplifier(expr)
         expected = expr
         self.assertEqual(actual, expected)
 
-        # Test flat pseudo-function many: f(2, 3) -> f(2, 3)
+        # Test flat pseudo-function many args: f(2, 3) -> f(2, 3)
         expr = Call(Variable('f'), (2, 3))
         actual = self.simplifier(expr)
         expected = expr
         self.assertEqual(actual, expected)
 
-        # Test simplification of argument before call: f(2 + 3) -> f(5)
+        # Test simplification of one arg before call: f(2 + 3) -> f(5)
         expr = Call(Variable('f'), (Sum((2, 3)), ))
         actual = self.simplifier(expr)
         expected = Call(Variable('f'), (5, ))
         self.assertEqual(actual, expected)
 
-        # Test simplification of argument before call many: f(2 + 3, 2 + 3) -> f(5, 5)
+        # Test simplification of many args before call: f(2 + 3, 2 + 3) -> f(5, 5)
         expr = Call(Variable('f'), (Sum((2, 3)), Sum((2, 3))))
         actual = self.simplifier(expr)
         expected = Call(Variable('f'), (5, 5))
