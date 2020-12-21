@@ -1,4 +1,5 @@
 import matstep.simplifiers
+import matstep.functions
 
 
 _simplifier = simplifiers.StepSimplifier()
