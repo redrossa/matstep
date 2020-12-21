@@ -3,11 +3,18 @@ import unittest
 from pymbolic.primitives import Call, Sum
 
 from matstep import StepSimplifier
-from matstep.functions import Identity
+from matstep.functions import Identity, SquareRoot
 
 
 class TestIdentityFunction(unittest.TestCase):
+    """
+    Tests the functionalities and properties of a `matstep.functions
+    .Identity` instance.
+    """
+
     def setUp(self) -> None:
+        """Initializes func attribute to a `matstep.functions.Identity` instance"""
+
         self.func = Identity()
         self.simplifier = StepSimplifier()
 
