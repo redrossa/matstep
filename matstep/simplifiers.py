@@ -190,6 +190,6 @@ class StepStringifier(StringifyMapper):
 
     def map_foreign(self, expr, *args, **kwargs):
         try:
-            super(StepStringifier, self).map_foreign(expr, *args, **kwargs)
+            return super(StepStringifier, self).map_foreign(expr, *args, **kwargs)
         except ValueError:
             return str(expr)
