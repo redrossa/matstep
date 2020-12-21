@@ -71,4 +71,5 @@ class FunctionStringifyMapper(pymbolic.mapper.stringifier.StringifyMapper):
 
     def handle_unsupported_expression(self, expr, enclosing_prec, *args, **kwargs):
         return self.map_matstep_function(expr, enclosing_prec, *args, **kwargs) if isinstance(expr, Function) \
-            else super(FunctionStringifyMapper, self).handle_unsupported_expression()
+            else super(FunctionStringifyMapper, self)\
+            .handle_unsupported_expression(expr, enclosing_prec, *args, **kwargs)
