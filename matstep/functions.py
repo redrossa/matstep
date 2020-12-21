@@ -21,7 +21,7 @@ class Function(pymbolic.primitives.FunctionSymbol):
     allow `Call` to check the number of arguments.
     """
 
-    mapper_method = 'map_function'
+    mapper_method = 'map_matstep_function'
 
     def make_stringifier(self, originating_stringifier=None):
         return FunctionStringifyMapper(originating_stringifier)
@@ -63,12 +63,12 @@ class Root(Function):
 class FunctionStringifyMapper(pymbolic.mapper.stringifier.StringifyMapper):
     """A mapper to represent a `Function` instance as a string."""
 
-    def map_function(self, expr, enclosing_prec, *args, **kwargs):
+    def map_matstep_function(self, expr, enclosing_prec, *args, **kwargs):
         try:
             return expr.name
         except AttributeError:
             return expr.__class__.__name__
 
     def handle_unsupported_expression(self, expr, enclosing_prec, *args, **kwargs):
-        return self.map_function(expr, enclosing_prec, *args, **kwargs) if isinstance(expr, Function) \
+        return self.map_matstep_function(expr, enclosing_prec, *args, **kwargs) if isinstance(expr, Function) \
             else super(FunctionStringifyMapper, self).handle_unsupported_expression()
