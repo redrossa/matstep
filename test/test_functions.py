@@ -2,7 +2,7 @@ import unittest
 
 from pymbolic.primitives import Call, Sum
 
-from matstep import StepSimplifier
+from matstep.simplifiers import StepSimplifier
 from matstep.functions import Identity, SquareRoot
 
 
