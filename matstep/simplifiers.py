@@ -187,7 +187,10 @@ class StepSimplifier(RecursiveMapper):
         return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a and b, *args, **kwargs)
 
     def map_foreign(self, expr, *args, **kwargs):
-        return expr
+        try:
+            return super(StepSimplifier, self).map_foreign(expr, *args, **kwargs)
+        except ValueError:
+            return expr
 
 
 class StepStringifier(StringifyMapper):
