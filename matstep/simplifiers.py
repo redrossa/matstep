@@ -1,62 +1,40 @@
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Sum, Expression
-
-from matstep.core import Term, Polynomial
-
-
-class StepSimplifyMapper(RecursiveMapper):
-    def map_matstep_term(self, expr):
-        return expr
-
-    def map_matstep_polynomial(self, expr):
-        return expr
-
-    def map_sum(self, expr):
-        flat = flattened_sum(expr.children)
-
-        return sum(flat.children) if all(isinstance(c, (Term, Polynomial)) for c in flat.children) \
-            else Sum(tuple(c if isinstance(c, (Term, Polynomial)) else self.rec(c) for c in flat.children))
-
-    def map_product(self, expr):
-        from pymbolic.primitives import Product
-        from pymbolic import flattened_product
-        from functools import reduce
-
-        def is_evaluatable(components):
-            return Term in [type(c) for c in components] if len(components) == 2 \
-                else all(isinstance(c, Term) for c in components)
-
-        flat = flattened_product(expr.children)
-
-        if is_evaluatable(flat.children):
-            return reduce(lambda a, b: a * b, flat.children)
-
-        terms = [c for c in flat.children if isinstance(c, Term)]
-        prod_terms = reduce(lambda a, b: a * b, terms, Term(1))
-        non_terms = [c for c in flat.children if not isinstance(c, Term)]
-
-        # prepare to distribute Term if exists and wasn't first when passed
-        if terms and prod_terms != flat.children[0]:
-            return Product((prod_terms, *non_terms))
-
-        # at this point, either all non Term children (then Polynomial distributand) or Term was first when passed
-
-        children = [prod_terms] + non_terms if terms else non_terms
-
-        if not isinstance(children[0], (Term, Polynomial)):
-            return Product((self.rec(children[0]), *children[1:]))
-
-        if not isinstance(children[1], Polynomial):
-            return Product((children[0], self.rec(children[1]), *children[2:]))
-
-        return Product((children[0] * children[1], *children[2:]))
-
-    def map_foreign(self, expr, *args, **kwargs):
-        return expr.make_stepsimplifier()(expr, *args, **kwargs)
+from pymbolic.mapper.stringifier import StringifyMapper
+from pymbolic.primitives import Expression
 
 
 class StepSimplifier(RecursiveMapper):
+    """
+    A step-by-step simplifier for expressions constructed from
+    `pymbolic.primitives.Expression` instances. Non-pymbolic
+    objects are operands of the expression tree therefore at
+    the most simplied form, an expression returns a non-pymbolic
+    object. The non-pymbolic operands of an expression should
+    overload the necessary Python operators.
+    """
+
     def eval_unary_expr(self, expr, op_func, *args, **kwargs):
+        """
+        A helper method for evaluating single-operand `pymbolic
+        .primitives.Expression` instances.
+
+        Takes the only child attribute of the given unary `pymbolic
+        .primitives.Expression` instance and passes it to the
+        given op_func and returns the result.
+
+        :param expr: the single-operand `pymbolic.primitives.
+        Expression` instance
+
+        :param op_func: at least a single-argument function
+        corresponding to the operation associated with `expr`
+
+        :return: an evaluated, non-pymbolic object as a result
+        of applying `op_func` to the operand of `expr` if the
+        operand can not be simplified further otherwise a
+        pymbolic object of type `type(expr)` with a simplified
+        operand
+        """
+
         expr_type = type(expr)
         op, = expr.__getinitargs__()
 
@@ -70,6 +48,27 @@ class StepSimplifier(RecursiveMapper):
         return result
 
     def eval_binary_expr(self, expr, op_func, *args, **kwargs):
+        """
+        A helper method for evaluating double-operand `pymbolic
+        .primitives.Expression` instances.
+
+        Takes the two children attributes of the given binary
+        `pymbolic.primitives.Expression` instance and passes them
+        to the given op_func and returns the result.
+
+        :param expr: the double-operand `pymbolic.primitives.
+        Expression` instance
+
+        :param op_func: at least a double-argument function
+        corresponding to the operation associated with `expr`
+
+        :return: an evaluated, non-pymbolic object as a result
+        of applying `op_func` to the two operands of `expr` together
+        if the any of the operands can not be simplified further
+        otherwise a pymbolic object of type `type(expr)` with
+        the simplified operands
+        """
+
         expr_type = type(expr)
         op1, op2 = expr.__getinitargs__()
 
@@ -83,6 +82,32 @@ class StepSimplifier(RecursiveMapper):
         return result
 
     def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
+        """
+        A helper method for evaluating multi-operand `pymbolic
+        .primitives.Expression` instances.
+
+        Takes the tuple children attribute of the given binary `pymbolic
+        .primitives.Expression` instance and apply a reduction operation
+        on the tuple elements based on the given function.
+
+        The multi-operand pymbolic expression follows the convention
+        of using a single tuple to store the operands, an important
+        difference when creating a new instance of the given expression
+        type.
+
+        :param expr: the multi-operand `pymbolic.primitives.
+        Expression` instance
+
+        :param op_func: a double-argument function corresponding
+        to the operation associated with `expr`
+
+        :return: an evaluated, non-pymbolic object as a result
+        of applying `op_func` to the operands of `expr` together
+        if the any of the operands can not be simplified further
+        otherwise a pymbolic object of type `type(expr)` with
+        the simplified operands
+        """
+
         expr_type = type(expr)
         operands = expr.__getinitargs__()[0]  # it returns a tuple of its attributes (only children which is a tuple)
         last_operand = None
@@ -102,11 +127,18 @@ class StepSimplifier(RecursiveMapper):
         return result[0] if len(result) == 1 else expr_type(tuple(result))
 
     def map_call(self, expr, *args, **kwargs):
+        """
+        Simplifies the given `pymbolic.primitives.Call` instance.
+
+        The function operand will not be called until all the parameter
+        operands are simplified.
+        """
+
         expr_type = type(expr)
         func, params = expr.__getinitargs__()
         eval_params = tuple(self.rec(p, *args, **kwargs) for p in params)
 
-        return expr_type(func, eval_params) if any(isinstance(p, Expression) for p in eval_params) \
+        return expr_type(func, eval_params) if any(isinstance(p, Expression) for p in params) \
             else func(*eval_params)
 
     def map_sum(self, expr, *args, **kwargs):
@@ -158,26 +190,18 @@ class StepSimplifier(RecursiveMapper):
         return expr
 
 
-def flattened_sum(components):
-    from pymbolic.primitives import is_zero
-    # flatten any potential sub-sums
-    queue = list(components)
-    done = []
+class StepStringifier(StringifyMapper):
+    """
+    An subclass of `pymbolic.mapper.stringifier.StringifyMapper` that
+    accepts foreign objects to accommodate for the ability of `StepSimplifier`
+    to work with them without exceptions.
 
-    while queue:
-        item = queue.pop(0)
+    Use a `StepStringifier` instance to safely get the string representation
+    of the returned value of a call to a `StepSimplifier`.
+    """
 
-        if is_zero(item):
-            continue
-
-        if type(item) is Sum:
-            queue += item.children
-        else:
-            done.append(item)
-
-    if len(done) == 0:
-        return 0
-    elif len(done) == 1:
-        return done[0]
-    else:
-        return Sum(tuple(done))
+    def map_foreign(self, expr, *args, **kwargs):
+        try:
+            return super(StepStringifier, self).map_foreign(expr, *args, **kwargs)
+        except ValueError:
+            return str(expr)
