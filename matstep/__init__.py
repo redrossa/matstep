@@ -2,7 +2,7 @@ import matstep.simplifiers
 import matstep.functions
 
 
-_simplifier = simplifiers.StepSimplifier()
+_simplifier = matstep.simplifiers.StepSimplifier()
 
 
 def simplify_next(expr, simplifier=None):
