@@ -186,6 +186,13 @@ class StepSimplifier(RecursiveMapper):
     def map_logical_and(self, expr, *args, **kwargs):
         return self.eval_binary_expr(expr, lambda a, b, *args, **kwargs: a and b, *args, **kwargs)
 
+    def map_constant(self, expr, *args, **kwargs):
+        return expr
+
+    def map_numpy_array(self, expr, *args, **kwargs):
+        import numpy as np
+        return np.vectorize(self.rec)(expr)
+
     def map_foreign(self, expr, *args, **kwargs):
         try:
             return super(StepSimplifier, self).map_foreign(expr, *args, **kwargs)
