@@ -1,6 +1,6 @@
 import numpy as np
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Expression, Sum, Product
+from pymbolic.primitives import Expression, Sum, Product, Power
 
 
 class StepSimplifier(RecursiveMapper):
@@ -202,7 +202,6 @@ class MatrixSimplifier(StepSimplifier):
     array([[Sum((1, 1)), Sum((2, 0))],
            [Sum((1, 0)), Sum((1, 1))]])
 
-
     A `matstep.simplifiers.StepSimplifier` may suffice if expression steps
     inside matrices are not desirable. The above example would instead directly
     yield the `numpy.ndarray` whose elements are sums of the corresponding `int`
@@ -240,5 +239,17 @@ class MatrixSimplifier(StepSimplifier):
                              for row1, row2 in zip(op1.transpose(), op2)])
 
         return self.eval_multichild_expr(expr, mat_mul, *args, **kwargs)
+
+    def map_power(self, expr, *args, **kwargs):
+        def mat_pow(base, exp):
+            if not isinstance(base, np.ndarray):
+                return base ** exp
+
+            rows, cols = base.shape
+            triu = base[np.triu_indices(rows, k=1)]
+            tril = base[np.tril_indices(rows, k=-1)]
+            if not np.any(triu) or not np.any(tril):
+                # upper or lower triangular matrix
+                return np.array([[Power(el, exp) for el in row] for row in base])
 
 
