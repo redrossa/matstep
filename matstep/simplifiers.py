@@ -248,8 +248,8 @@ class MatrixSimplifier(StepSimplifier):
             rows, cols = base.shape
             triu = base[np.triu_indices(rows, k=1)]
             tril = base[np.tril_indices(rows, k=-1)]
-            if not np.any(triu) or not np.any(tril):
-                # upper or lower triangular matrix
-                return np.array([[Power(el, exp) for el in row] for row in base])
 
+            return np.diag([Power(el, exp) for el in base.diagonal()]) if not np.any(triu) and not np.any(tril) \
+                else np.array([[Power(el, exp) for el in row] for row in base])
 
+        return self.eval_binary_expr(expr, mat_pow, *args, **kwargs)
