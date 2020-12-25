@@ -222,7 +222,7 @@ class MatrixSimplifier(StepSimplifier):
 
         try:
             result = self.eval_multichild_expr(expr, mat_add, *args, **kwargs)
-        except (TypeError, ValueError):
+        except TypeError:
             result = super(MatrixSimplifier, self).map_sum(expr, *args, **kwargs)
 
         return result
