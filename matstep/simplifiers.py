@@ -242,7 +242,7 @@ class MatrixSimplifier(StepSimplifier):
 
     def map_power(self, expr, *args, **kwargs):
         def mat_pow(base, exp):
-            if not isinstance(base, np.ndarray):
+            if not isinstance(base, np.ndarray) or exp < -1:
                 return base ** exp
 
             rows, cols = base.shape
