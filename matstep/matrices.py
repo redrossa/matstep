@@ -38,7 +38,7 @@ class Determinant(Function):
         triu = array[np.triu_indices(rows, k=1)]
         tril = array[np.tril_indices(rows, k=-1)]
         if not np.any(triu) or not np.any(tril):
-            # diagonal matrix
+            # upper or lower triangular matrix
             return Product(tuple(entry for entry in array.diagonal()))
 
         def _minor(arr, i, j):
