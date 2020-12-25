@@ -230,8 +230,8 @@ class MatrixSimplifier(StepSimplifier):
     def map_product(self, expr, *args, **kwargs):
         def mat_mul(op1, op2):
             if not isinstance(op1, np.ndarray) or not isinstance(op2, np.ndarray):
-                raise TypeError("Expected types 'numpy.ndarray', got %s and %s instead"
-                                % (str(type(op1)), str(type(op2))))
+                return op1 * op2
+
             if op1.shape[1] != op2.shape[0]:
                 # mat1 cols must equal mat2 rows
                 raise ValueError('mismatched dimensions %s and %s' % (str(op1.shape), str(op2.shape)))
@@ -239,12 +239,6 @@ class MatrixSimplifier(StepSimplifier):
             return np.array([[Product((el1, el2)) for el1, el2 in zip(row1, row2)]
                              for row1, row2 in zip(op1.transpose(), op2)])
 
-        try:
-            result = self.eval_multichild_expr(expr, mat_mul, *args, **kwargs)
-        except TypeError:
-            # potential scalar multiplication
-            result = super(MatrixSimplifier, self).map_product(expr, *args, **kwargs)
-
-        return result
+        return self.eval_multichild_expr(expr, mat_mul, *args, **kwargs)
 
 
