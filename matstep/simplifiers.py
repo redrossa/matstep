@@ -1,5 +1,6 @@
+import numpy as np
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Expression
+from pymbolic.primitives import Expression, Sum
 
 
 class StepSimplifier(RecursiveMapper):
@@ -36,15 +37,9 @@ class StepSimplifier(RecursiveMapper):
 
         expr_type = type(expr)
         op, = expr.__getinitargs__()
+        result = op_func(op, *args, **kwargs)
 
-        try:
-            result = op_func(op, *args, **kwargs)
-            if result == expr:
-                raise TypeError
-        except TypeError:
-            return expr_type(self.rec(op, *args, *kwargs))
-
-        return result
+        return result if result != expr else expr_type(self.rec(op, *args, *kwargs))
 
     def eval_binary_expr(self, expr, op_func, *args, **kwargs):
         """
@@ -70,15 +65,9 @@ class StepSimplifier(RecursiveMapper):
 
         expr_type = type(expr)
         op1, op2 = expr.__getinitargs__()
+        result = op_func(op1, op2, *args, **kwargs)
 
-        try:
-            result = op_func(op1, op2, *args, **kwargs)
-            if result == expr:
-                raise TypeError
-        except TypeError:
-            return expr_type(self.rec(op1, *args, **kwargs), self.rec(op2, *args, **kwargs))
-
-        return result
+        return result if result != expr else expr_type(self.rec(op1, *args, **kwargs), self.rec(op2, *args, **kwargs))
 
     def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
         """
@@ -114,12 +103,10 @@ class StepSimplifier(RecursiveMapper):
 
         for operand in operands:
             eval_operand = self.rec(operand, *args, **kwargs)
-            try:
-                if isinstance(operand, Expression) or isinstance(last_operand, Expression):
-                    raise TypeError
-                new_operand = op_func(result.pop(), eval_operand, *args, **kwargs)
-            except (TypeError, IndexError):
+            if isinstance(operand, Expression) or isinstance(last_operand, Expression) or not result:
                 new_operand = eval_operand
+            else:
+                new_operand = op_func(result.pop(), eval_operand, *args, **kwargs)
             result.append(new_operand)
             last_operand = operand
 
@@ -189,11 +176,31 @@ class StepSimplifier(RecursiveMapper):
         return expr
 
     def map_numpy_array(self, expr, *args, **kwargs):
-        import numpy as np
-        return np.vectorize(self.rec)(expr)
+        return np.vectorize(self.rec)(expr, *args, **kwargs)
 
     def map_foreign(self, expr, *args, **kwargs):
         try:
             return super(StepSimplifier, self).map_foreign(expr, *args, **kwargs)
         except ValueError:
             return expr
+
+
+class MatrixSimplifier(StepSimplifier):
+    def map_sum(self, expr, *args, **kwargs):
+        def mat_add(mat1, mat2):
+            if not isinstance(mat1, np.ndarray) or not isinstance(mat2, np.ndarray):
+                raise TypeError("Expected types 'numpy.ndarray', got %s and %s instead"
+                                % (str(type(mat1)), str(type(mat2))))
+            if mat1.shape != mat2.shape:
+                raise ValueError('mismatched dimensions %s and %s' % (str(mat1.shape), str(mat2.shape)))
+
+            return np.array([[Sum((el1, el2)) for el1, el2 in zip(row1, row2)] for row1, row2 in zip(mat1, mat2)])
+
+        try:
+            result = self.eval_multichild_expr(expr, mat_add, *args, **kwargs)
+        except (TypeError, ValueError):
+            result = super(MatrixSimplifier, self).map_sum(expr, *args, **kwargs)
+
+        return result
+
+
