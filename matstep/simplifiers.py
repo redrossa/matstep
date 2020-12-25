@@ -1,6 +1,6 @@
 import numpy as np
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Expression, Sum
+from pymbolic.primitives import Expression, Sum, Product
 
 
 class StepSimplifier(RecursiveMapper):
@@ -186,20 +186,64 @@ class StepSimplifier(RecursiveMapper):
 
 
 class MatrixSimplifier(StepSimplifier):
-    def map_sum(self, expr, *args, **kwargs):
-        def mat_add(mat1, mat2):
-            if not isinstance(mat1, np.ndarray) or not isinstance(mat2, np.ndarray):
-                raise TypeError("Expected types 'numpy.ndarray', got %s and %s instead"
-                                % (str(type(mat1)), str(type(mat2))))
-            if mat1.shape != mat2.shape:
-                raise ValueError('mismatched dimensions %s and %s' % (str(mat1.shape), str(mat2.shape)))
+    """
+    A simplifier for more detailed steps on expressions involving matrices.
+    This simplifier yields the operations done on each element of the resulting
+    matrix. For example, a summation of two matrices results in the following:
 
-            return np.array([[Sum((el1, el2)) for el1, el2 in zip(row1, row2)] for row1, row2 in zip(mat1, mat2)])
+    >>> import numpy as np
+    >>> from pymbolic.primitives import Sum
+    >>> from matstep.simplifiers import MatrixSimplifier
+    >>> A = np.array([[1, 2],
+    ...               [1, 1]])
+    >>> B = np.array([[1, 0],
+    ...               [0, 1]])
+    >>> MatrixSimplifier()(Sum((A, B)))
+    array([[Sum((1, 1)), Sum((2, 0))],
+           [Sum((1, 0)), Sum((1, 1))]])
+
+
+    A `matstep.simplifiers.StepSimplifier` may suffice if expression steps
+    inside matrices are not desirable. The above example would instead directly
+    yield the `numpy.ndarray` whose elements are sums of the corresponding `int`
+    elements of `A` and `B` since `numpy.ndarray` overloads `__add__`.
+    """
+
+    def map_sum(self, expr, *args, **kwargs):
+        def mat_add(op1, op2):
+            if not isinstance(op1, np.ndarray) or not isinstance(op2, np.ndarray):
+                raise TypeError("Expected types 'numpy.ndarray', got %s and %s instead"
+                                % (str(type(op1)), str(type(op2))))
+            if op1.shape != op2.shape:
+                raise ValueError('mismatched dimensions %s and %s' % (str(op1.shape), str(op2.shape)))
+
+            return np.array([[Sum((el1, el2)) for el1, el2 in zip(row1, row2)]
+                             for row1, row2 in zip(op1, op2)])
 
         try:
             result = self.eval_multichild_expr(expr, mat_add, *args, **kwargs)
         except (TypeError, ValueError):
             result = super(MatrixSimplifier, self).map_sum(expr, *args, **kwargs)
+
+        return result
+
+    def map_product(self, expr, *args, **kwargs):
+        def mat_mul(op1, op2):
+            if not isinstance(op1, np.ndarray) or not isinstance(op2, np.ndarray):
+                raise TypeError("Expected types 'numpy.ndarray', got %s and %s instead"
+                                % (str(type(op1)), str(type(op2))))
+            if op1.shape[1] != op2.shape[0]:
+                # mat1 cols must equal mat2 rows
+                raise ValueError('mismatched dimensions %s and %s' % (str(op1.shape), str(op2.shape)))
+
+            return np.array([[Product((el1, el2)) for el1, el2 in zip(row1, row2)]
+                             for row1, row2 in zip(op1.transpose(), op2)])
+
+        try:
+            result = self.eval_multichild_expr(expr, mat_mul, *args, **kwargs)
+        except TypeError:
+            # potential scalar multiplication
+            result = super(MatrixSimplifier, self).map_product(expr, *args, **kwargs)
 
         return result
 
