@@ -2,7 +2,7 @@ import numpy as np
 from pymbolic.mapper import RecursiveMapper
 from pymbolic.primitives import Expression, Sum, Product, Power
 
-from matstep.equalizer import equalize
+from matstep.equalizer import equals
 
 
 class StepSimplifier(RecursiveMapper):
@@ -41,7 +41,7 @@ class StepSimplifier(RecursiveMapper):
         op, = expr.__getinitargs__()
         result = op_func(op, *args, **kwargs)
 
-        return result if not equalize(result, expr) \
+        return result if not equals(result, expr) \
             else expr_type(self.rec(op, *args, *kwargs))
 
     def eval_binary_expr(self, expr, op_func, *args, **kwargs):
@@ -70,7 +70,7 @@ class StepSimplifier(RecursiveMapper):
         op1, op2 = expr.__getinitargs__()
         result = op_func(op1, op2, *args, **kwargs)
 
-        return result if not equalize(result, expr) \
+        return result if not equals(result, expr) \
             else expr_type(self.rec(op1, *args, **kwargs), self.rec(op2, *args, **kwargs))
 
     def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
@@ -187,6 +187,35 @@ class StepSimplifier(RecursiveMapper):
             return super(StepSimplifier, self).map_foreign(expr, *args, **kwargs)
         except ValueError:
             return expr
+
+    def next_step(self, expr, *args, **kwargs):
+        """
+        Returns the next step in the simplification of `expr`.
+        Equivalent to calling this instance directly.
+        """
+
+        return self.rec(expr, *args, **kwargs)
+
+    def final_step(self, expr, *args, **kwargs):
+        """Returns the most simplified step in the simplification of `expr`."""
+
+        return self.all_steps(expr, *args, **kwargs)[-1]
+
+    def all_steps(self, expr, *args, **kwargs):
+        """
+        Returns a list of steps in the simplification of `expr` starting from
+        `expr` all the way to the most simplified step.
+        """
+
+        curr = self.next_step(expr, *args, **kwargs)
+        steps = [expr]
+
+        while not equals(curr, expr):
+            expr = curr
+            curr = self.next_step(expr)
+            steps.append(expr)
+
+        return steps
 
 
 class MatrixSimplifier(StepSimplifier):
