@@ -2,6 +2,8 @@ import numpy as np
 from pymbolic.mapper import RecursiveMapper
 from pymbolic.primitives import Expression, Sum, Product, Power
 
+from matstep.equalizer import equalize
+
 
 class StepSimplifier(RecursiveMapper):
     """
@@ -39,7 +41,8 @@ class StepSimplifier(RecursiveMapper):
         op, = expr.__getinitargs__()
         result = op_func(op, *args, **kwargs)
 
-        return result if result != expr else expr_type(self.rec(op, *args, *kwargs))
+        return result if not equalize(result, expr) \
+            else expr_type(self.rec(op, *args, *kwargs))
 
     def eval_binary_expr(self, expr, op_func, *args, **kwargs):
         """
@@ -67,7 +70,8 @@ class StepSimplifier(RecursiveMapper):
         op1, op2 = expr.__getinitargs__()
         result = op_func(op1, op2, *args, **kwargs)
 
-        return result if result != expr else expr_type(self.rec(op1, *args, **kwargs), self.rec(op2, *args, **kwargs))
+        return result if not equalize(result, expr) \
+            else expr_type(self.rec(op1, *args, **kwargs), self.rec(op2, *args, **kwargs))
 
     def eval_multichild_expr(self, expr, op_func, *args, **kwargs):
         """
