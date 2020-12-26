@@ -177,5 +177,5 @@ class EqualizerMapper(pymbolic.mapper.Mapper):
 _eq = EqualizerMapper()
 
 
-def equalize(expr1, expr2):
+def equals(expr1, expr2):
     return _eq(expr1, expr2)
