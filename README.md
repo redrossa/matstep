@@ -9,8 +9,6 @@ This project is currently under construction!
 Goals currently being worked on:
 - Matstep will instead provide matrix computation support using `numpy.ndarray`.
 - Matrix expression operations for `numpy.ndarray`:
-    - Basic operations: matrix addition and scalar and matrix multiplications
-    - Determinant
     - Row echelon form
     - Reduced row echelon form
     - Polynomial characteristic
@@ -21,5 +19,7 @@ Goals currently being worked on:
     - Cross product
 
 Goals implemented:
-- A step-by-step expression simplifier that can evaluate any operable objects (i.e. those that overload Python operators).
+- Determinant function
+- Basic matrix operations: addition, multiplication, exponential
 - A function class that gives the ability for defining (and getting) an output expression based on an input expression.
+- A step-by-step expression simplifier that can evaluate any operable objects (i.e. those that overload Python operators).
