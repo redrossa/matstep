@@ -1,5 +1,5 @@
 import numpy as np
-from pymbolic.primitives import Sum, Product, Call
+from pymbolic.primitives import Sum, Product, Call, Expression
 
 from matstep.functions import Function
 
@@ -49,3 +49,26 @@ class Determinant(Function):
 
         coeffs = array[0]
         return Sum(tuple(_coeff_det(c, j) for j, c in enumerate(coeffs)))
+
+
+class _VectorProduct(Expression):
+    def __init__(self, lvec, rvec):
+        if lvec.shape != rvec.shape:
+            raise ValueError('mismatched dimensions: %s and %s' % (str(lvec.shape), str(rvec.shape)))
+        if lvec.shape[0] != 1 and lvec.shape[0] != 1:
+            raise ValueError("expected '1-D' matrix, got '%d-D' instead" % lvec.ndim)
+
+        self.lvec = lvec
+        self.rvec = rvec
+
+    def __getinitargs__(self):
+        return self.lvec, self.rvec
+
+
+class DotProduct(_VectorProduct):
+    mapper_method = 'map_matstep_dot_product'
+
+
+class CrossProduct(_VectorProduct):
+    mapper_method = 'map_matstep_cross_product'
+
