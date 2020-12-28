@@ -53,11 +53,6 @@ class Determinant(Function):
 
 class _VectorProduct(Expression):
     def __init__(self, lvec, rvec):
-        if lvec.shape != rvec.shape:
-            raise ValueError('mismatched dimensions: %s and %s' % (str(lvec.shape), str(rvec.shape)))
-        if lvec.shape[0] != 1 and lvec.shape[0] != 1:
-            raise ValueError("expected '1-D' matrix, got '%d-D' instead" % lvec.ndim)
-
         self.lvec = lvec
         self.rvec = rvec
 
