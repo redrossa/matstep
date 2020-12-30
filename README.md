@@ -14,12 +14,15 @@ Goals currently being worked on:
     - Polynomial characteristic
     - Upper/lower trianglular form
     - Diagonalization
-- Vector expression operations:
-    - Dot product (either just a 1-D matrix multiplication or a separate implementation)
-    - Cross product
+  
+Goals to implement in the future:
+- Cross-representation interoperability functions for LaTeX and ASCIIMath
+- Calculus module (maybe)
 
 Goals implemented:
+- Dot product
+- Cross product
 - Determinant function
 - Basic matrix operations: addition, multiplication, exponential
-- A function class that gives the ability for defining (and getting) an output expression based on an input expression.
-- A step-by-step expression simplifier that can evaluate any operable objects (i.e. those that overload Python operators).
+- A function class that gives the ability for defining (and getting) an output expression based on an input expression
+- A step-by-step expression simplifier that can evaluate any operable objects (i.e. those that overload Python operators)
