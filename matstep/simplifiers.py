@@ -294,7 +294,7 @@ class MatrixSimplifier(StepSimplifier):
             if lvec.shape != rvec.shape:
                 raise ValueError('mismatched dimensions: %s and %s' % (str(lvec.shape), str(rvec.shape)))
             if lvec.shape[0] != 1 and lvec.shape[0] != 1:
-                raise ValueError("expected 1-D matrix, got %s instead" % str(lvec.shape))
+                raise ValueError("expected vectors, got %s matrix instead" % str(lvec.shape))
 
             lvec, rvec = lvec.flatten(), rvec.flatten()
             return Sum(tuple(Product((el1, el2)) for el1, el2 in zip(lvec, rvec)))
@@ -305,8 +305,8 @@ class MatrixSimplifier(StepSimplifier):
         def vec_cross(lvec, rvec):
             if lvec.shape != rvec.shape:
                 raise ValueError('mismatched dimensions: %s and %s' % (str(lvec.shape), str(rvec.shape)))
-            if lvec.shape[0] != 1 and lvec.shape[0] != 1:
-                raise ValueError("expected 1-D matrix, got %s instead" % str(lvec.shape))
+            if not (lvec.shape[0] == 1 and lvec.shape[1] == 3 or lvec.shape[0] == 3 and lvec.shape[1] == 1):
+                raise ValueError("expected vectors in 3-D space, got %s matrix instead" % str(lvec.shape))
 
             lvec, rvec = lvec.flatten(), rvec.flatten()
             frees = np.array(sp.symbols('i j k'))
