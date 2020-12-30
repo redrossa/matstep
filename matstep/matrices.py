@@ -2,6 +2,7 @@ import numpy as np
 from pymbolic.primitives import Sum, Product, Call, Expression
 
 from matstep.functions import Function
+from matstep.stringifiers import StepStringifier
 
 
 class Determinant(Function):
@@ -63,7 +64,31 @@ class _VectorProduct(Expression):
 class DotProduct(_VectorProduct):
     mapper_method = 'map_matstep_dot_product'
 
+    def make_stringifier(self, originating_stringifier=None):
+        return DotProductStringifier()
+
+
+class DotProductStringifier(StepStringifier):
+    def map_matstep_dot_product(self, expr, enclosing_prec, *args, **kwargs):
+        from pymbolic.mapper.stringifier import PREC_PRODUCT
+        return self.parenthesize_if_needed(
+            self.format('%s · %s',
+                        self.rec(expr.lvec, enclosing_prec, *args, **kwargs),
+                        self.rec(expr.rvec, enclosing_prec, *args, **kwargs)),
+            enclosing_prec,
+            PREC_PRODUCT)
+
 
 class CrossProduct(_VectorProduct):
     mapper_method = 'map_matstep_cross_product'
 
+
+class CrossProductStringifier(StepStringifier):
+    def map_matstep_cross_product(self, expr, enclosing_prec, *args, **kwargs):
+        from pymbolic.mapper.stringifier import PREC_PRODUCT
+        return self.parenthesize_if_needed(
+            self.format('%s ✕ %s',
+                        self.rec(expr.lvec, enclosing_prec, *args, **kwargs),
+                        self.rec(expr.rvec, enclosing_prec, *args, **kwargs)),
+            enclosing_prec,
+            PREC_PRODUCT)
