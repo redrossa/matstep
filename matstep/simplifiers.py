@@ -286,3 +286,15 @@ class MatrixSimplifier(StepSimplifier):
                 else np.array([[Power(el, exp) for el in row] for row in base])
 
         return self.eval_binary_expr(expr, mat_pow, *args, **kwargs)
+
+    def map_matstep_dot_product(self, expr, *args, **kwargs):
+        def vec_dot(lvec, rvec):
+            if lvec.shape != rvec.shape:
+                raise ValueError('mismatched dimensions: %s and %s' % (str(lvec.shape), str(rvec.shape)))
+            if lvec.shape[0] != 1 and lvec.shape[0] != 1:
+                raise ValueError("expected 1-D matrix, got %s instead" % str(lvec.shape))
+
+            lvec, rvec = lvec.flatten(), rvec.flatten()
+            return Sum(tuple(Product((el1, el2)) for el1, el2 in zip(lvec, rvec)))
+
+        return self.eval_binary_expr(expr, vec_dot, *args, **kwargs)
