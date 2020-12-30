@@ -205,19 +205,16 @@ class StepSimplifier(RecursiveMapper):
 
     def all_steps(self, expr, *args, **kwargs):
         """
-        Returns a list of steps in the simplification of `expr` starting from
+        Yields the steps in the simplification of `expr` starting from
         `expr` all the way to the most simplified step.
         """
 
         curr = self.next_step(expr, *args, **kwargs)
-        steps = [expr]
 
         while not equals(curr, expr):
+            yield expr
             expr = curr
-            curr = self.next_step(expr)
-            steps.append(expr)
-
-        return steps
+            curr = self.next_step(expr, *args, **kwargs)
 
 
 class MatrixSimplifier(StepSimplifier):
