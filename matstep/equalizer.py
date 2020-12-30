@@ -118,10 +118,10 @@ class EqualizerMapper(pymbolic.mapper.Mapper):
         return self._map_multichild_expr(expr, other, *args, **kwargs)
 
     def map_list(self, expr, other, *args, **kwargs):
-        return expr == other
+        return all(self.rec(el1, el2) for el1, el2 in zip(expr, other))
 
     def map_tuple(self, expr, other, *args, **kwargs):
-        return expr == other
+        return all(self.rec(el1, el2) for el1, el2 in zip(expr, other))
 
     def map_numpy_array(self, expr, other, *args, **kwargs):
         import numpy
@@ -169,6 +169,12 @@ class EqualizerMapper(pymbolic.mapper.Mapper):
 
     def map_slice(self, expr, other, *args, **kwargs):
         return self._map_multichild_expr(expr, other, *args, **kwargs)
+
+    def map_foreign(self, expr, other, *args, **kwargs):
+        try:
+            return super(EqualizerMapper, self).map_foreign(expr, other, *args, **kwargs)
+        except ValueError:
+            return expr == other
 
     def __call__(self, expr, other, *args, **kwargs):
         return super(EqualizerMapper, self).__call__(expr, other, *args, **kwargs)
