@@ -1,8 +1,10 @@
 import numpy as np
+import sympy as sp
 from pymbolic.mapper import RecursiveMapper
-from pymbolic.primitives import Expression, Sum, Product, Power
+from pymbolic.primitives import Expression, Sum, Product, Power, Call
 
 from matstep.equalizer import equals
+from matstep.matrices import Determinant
 
 
 class StepSimplifier(RecursiveMapper):
@@ -298,3 +300,16 @@ class MatrixSimplifier(StepSimplifier):
             return Sum(tuple(Product((el1, el2)) for el1, el2 in zip(lvec, rvec)))
 
         return self.eval_binary_expr(expr, vec_dot, *args, **kwargs)
+
+    def map_matstep_cross_product(self, expr, *args, **kwargs):
+        def vec_cross(lvec, rvec):
+            if lvec.shape != rvec.shape:
+                raise ValueError('mismatched dimensions: %s and %s' % (str(lvec.shape), str(rvec.shape)))
+            if lvec.shape[0] != 1 and lvec.shape[0] != 1:
+                raise ValueError("expected 1-D matrix, got %s instead" % str(lvec.shape))
+
+            lvec, rvec = lvec.flatten(), rvec.flatten()
+            frees = np.array(sp.symbols('i j k'))
+            return Call(Determinant(), (np.vstack((frees, lvec, rvec)), ))
+
+        return self.eval_binary_expr(expr, vec_cross, *args, **kwargs)
