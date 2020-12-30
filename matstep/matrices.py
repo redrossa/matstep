@@ -82,6 +82,9 @@ class DotProductStringifier(StepStringifier):
 class CrossProduct(_VectorProduct):
     mapper_method = 'map_matstep_cross_product'
 
+    def make_stringifier(self, originating_stringifier=None):
+        return CrossProductStringifier()
+
 
 class CrossProductStringifier(StepStringifier):
     def map_matstep_cross_product(self, expr, enclosing_prec, *args, **kwargs):
