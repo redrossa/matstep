@@ -1,6 +1,7 @@
 import numpy as np
 from pymbolic.primitives import Sum, Product, Call, Expression
 
+from matstep.equalizer import equals
 from matstep.functions import Function
 from matstep.stringifiers import StepStringifier
 
@@ -97,7 +98,24 @@ class CrossProductStringifier(StepStringifier):
             PREC_PRODUCT)
 
 
-class RowSwap(Expression):
+class _RowOp(Expression):
+    def make_stringifier(self, originating_stringifier=None):
+        return RowOpStringifier()
+
+    def __eq__(self, other):
+        return type(other) == type(self) and equals(self.__getinitargs__(), other.__getinitargs__())
+
+
+class RowOpStringifier(StepStringifier):
+    def map_matstep_row_swap(self, expr, enclosing_prec, *args, **kwargs):
+        return repr(expr)
+
+    map_matstep_row_mul = map_matstep_row_swap
+
+    map_matstep_row_add = map_matstep_row_swap
+
+
+class RowSwap(_RowOp):
     def __init__(self, i, j, mat):
         self.i = i
         self.j = j
@@ -108,11 +126,8 @@ class RowSwap(Expression):
 
     mapper_method = 'map_matstep_row_swap'
 
-    def make_stringifier(self, originating_stringifier=None):
-        return RowOpStringifier()
 
-
-class RowMul(Expression):
+class RowMul(_RowOp):
     def __init__(self, i, k, mat):
         self.i = i
         self.k = k
@@ -123,11 +138,8 @@ class RowMul(Expression):
 
     mapper_method = 'map_matstep_row_mul'
 
-    def make_stringifier(self, originating_stringifier=None):
-        return RowOpStringifier()
 
-
-class RowAdd(Expression):
+class RowAdd(_RowOp):
     def __init__(self, i, k, j, mat):
         self.i = i
         self.k = k
@@ -138,15 +150,3 @@ class RowAdd(Expression):
         return self.i, self.k, self.j, self.mat
 
     mapper_method = 'map_matstep_row_add'
-
-    def make_stringifier(self, originating_stringifier=None):
-        return RowOpStringifier()
-
-
-class RowOpStringifier(StepStringifier):
-    def map_matstep_row_swap(self, expr, enclosing_prec, *args, **kwargs):
-        return repr(expr)
-
-    map_matstep_row_mul = map_matstep_row_swap
-
-    map_matstep_row_add = map_matstep_row_swap
