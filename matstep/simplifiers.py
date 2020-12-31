@@ -201,7 +201,7 @@ class StepSimplifier(RecursiveMapper):
     def final_step(self, expr, *args, **kwargs):
         """Returns the most simplified step in the simplification of `expr`."""
 
-        return self.all_steps(expr, *args, **kwargs)[-1]
+        return list(self.all_steps(expr, *args, **kwargs))[-1]
 
     def all_steps(self, expr, *args, **kwargs):
         """
