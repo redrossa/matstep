@@ -95,3 +95,58 @@ class CrossProductStringifier(StepStringifier):
                         self.rec(expr.rvec, enclosing_prec, *args, **kwargs)),
             enclosing_prec,
             PREC_PRODUCT)
+
+
+class RowSwap(Expression):
+    def __init__(self, i, j, mat):
+        self.i = i
+        self.j = j
+        self.mat = mat
+
+    def __getinitargs__(self):
+        return self.i, self.j, self.mat
+
+    mapper_method = 'map_matstep_row_swap'
+
+    def make_stringifier(self, originating_stringifier=None):
+        return RowOpStringifier()
+
+
+class RowMul(Expression):
+    def __init__(self, i, k, mat):
+        self.i = i
+        self.k = k
+        self.mat = mat
+
+    def __getinitargs__(self):
+        return self.i, self.k, self.mat
+
+    mapper_method = 'map_matstep_row_mul'
+
+    def make_stringifier(self, originating_stringifier=None):
+        return RowOpStringifier()
+
+
+class RowAdd(Expression):
+    def __init__(self, i, k, j, mat):
+        self.i = i
+        self.k = k
+        self.j = j
+        self.mat = mat
+
+    def __getinitargs__(self):
+        return self.i, self.k, self.j, self.mat
+
+    mapper_method = 'map_matstep_row_add'
+
+    def make_stringifier(self, originating_stringifier=None):
+        return RowOpStringifier()
+
+
+class RowOpStringifier(StepStringifier):
+    def map_matstep_row_swap(self, expr, enclosing_prec, *args, **kwargs):
+        return repr(expr)
+
+    map_matstep_row_mul = map_matstep_row_swap
+
+    map_matstep_row_add = map_matstep_row_swap
