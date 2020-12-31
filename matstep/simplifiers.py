@@ -209,12 +209,12 @@ class StepSimplifier(RecursiveMapper):
         `expr` all the way to the most simplified step.
         """
 
-        curr = self.next_step(expr, *args, **kwargs)
-
-        while not equals(curr, expr):
+        while True:
             yield expr
-            expr = curr
             curr = self.next_step(expr, *args, **kwargs)
+            if equals(curr, expr):
+                break
+            expr = curr
 
 
 class MatrixSimplifier(StepSimplifier):
