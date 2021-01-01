@@ -1,10 +1,12 @@
+import operator as op
+
 import numpy as np
 import sympy as sp
 from pymbolic.mapper import RecursiveMapper
 from pymbolic.primitives import Expression, Sum, Product, Power, Call
 
 from matstep.equalizer import equals
-from matstep.matrices import Determinant
+from matstep.matrices import Determinant, RowSwap, RowMul, RowAdd
 
 
 class StepSimplifier(RecursiveMapper):
@@ -310,3 +312,106 @@ class MatrixSimplifier(StepSimplifier):
             return Call(Determinant(), (np.vstack((frees, lvec, rvec)), ))
 
         return self.eval_binary_expr(expr, vec_cross, *args, **kwargs)
+
+    def _eval_row_op(self, expr, op_func, *args, **kwargs):
+        expr_type = type(expr)
+        ops = expr.__getinitargs__()[:-1]
+        og_mat = expr.__getinitargs__()[-1]
+        eval_mat = self.rec(og_mat)
+
+        if not isinstance(eval_mat, np.ndarray) or not equals(og_mat, eval_mat):
+            return expr_type(*ops, eval_mat, *args, **kwargs)
+
+        op_func(*ops, eval_mat)
+        return eval_mat
+
+    def map_matstep_row_swap(self, expr, *args, **kwargs):
+        return self._eval_row_op(expr, lambda i, j, mat: op.setitem(mat, [i, j], mat[[j, i]]), *args, **kwargs)
+
+    def map_matstep_row_mul(self, expr, *args, **kwargs):
+        return self._eval_row_op(expr, lambda i, k, mat: op.setitem(mat, i, k * mat[i]), *args, **kwargs)
+
+    def map_matstep_row_add(self, expr, *args, **kwargs):
+        return self._eval_row_op(expr, lambda i, k, j, mat: op.setitem(mat, i, mat[i] + k * mat[j]), *args, **kwargs)
+
+    def next_gaussian_step(self, expr, h=0, k=0, *args, **kwargs):
+        """
+        Returns the next step in the gaussian elimination of `expr` if possible. This method
+        is an extension of `MatrixSimplifier.next_step`; if `expr` is not an instance of
+        `numpy.ndarray`, the result is equivalent to applying `MatrixSimplifier.next_step`
+        to `expr`. This method will only return the necessary matrix elementary row
+        operations if `expr` is the most simplified instance of `numpy.ndarray`.
+
+        :param expr: an instance mappable by this `MatrixSimplifier`
+
+        :param h: optional positive number representing the row index of the starting
+        pivot in the potential `expr` matrix
+
+        :param k: optional positive number representing the column index of the starting
+        pivot in the potential `expr` matrix
+
+        :return: a tuple containing the result of applying this method to `expr`, the row
+        index of the starting pivot for the next recursive application to the result, and the
+        column index of the starting pivot for the next recursive application to the result.
+        The result is equivalent to applying `MatrixSimplifier.next_step` to `expr` if `expr`
+        is not a simplified instance of `numpy.ndarray` that has potential steps for gaussian
+        elimination, otherwise `expr` will be wrapped with the appropriate expression node of
+        an elementary row operation that can later be simplified to retrieve the next step
+        in the gaussian elimination.
+        """
+
+        if not isinstance(expr, np.ndarray) or h > expr.shape[0] or k > expr.shape[1]:
+            return self.rec(expr, *args, **kwargs), h, k
+
+        # find k-th pivot
+        k_col = expr[:, [k]]
+        abs_col = abs(k_col)
+        sub_col = abs_col[k:][abs_col[k:] > 0]
+
+        if sub_col.size == 0:
+            # lower rows are zero -> no further elimination
+            return self.rec(expr, *args, **kwargs), h, k
+
+        i_min = np.nonzero(abs_col[k:])[0][np.argmin(sub_col)] + k
+        i_max = np.argmax(abs_col)
+
+        if expr[i_max][k] == 0:
+            # no pivot in this column -> pass to the next column
+            return self.rec(expr, *args, *kwargs), h, k + 1
+
+        if i_min != h:
+            # pivot not at expected row -> swap rows
+            return RowSwap(h, i_min, self.rec(expr, *args, *kwargs)), h, k
+
+        pivot = expr[h][k]
+        if pivot != 1:
+            # multiply row so pivot == 1
+            return RowMul(h, 1/pivot, expr), h, k
+
+        nonzero_indices = np.nonzero(k_col.flatten())[0]
+        nonzero_indices = nonzero_indices[nonzero_indices != h]
+        if len(nonzero_indices) > 0:
+            # other values in pivot column are not zero -> make them zero one-by-one
+            i_nonzero = nonzero_indices[0]
+            return RowAdd(i_nonzero, -expr[i_nonzero][k], h, expr), h, k
+
+        # pivot column verified -> pass to the next row and column
+        return self.rec(expr, *args, **kwargs), h + 1, k + 1
+
+    def final_gaussian_step(self, expr, h=0, k=0, *args, **kwargs):
+        """Returns the reduced row echelon form of `expr` if possible."""
+
+        return [*self.all_gaussian_steps(expr, h, k, *args, **kwargs)][-1]
+
+    def all_gaussian_steps(self, expr, h=0, k=0, *args, **kwargs):
+        """
+        Yields the steps in the gaussian elimination of `expr` if possible starting
+        from `expr` all the way to the reduced row echelon form of `expr`.
+        """
+
+        while True:
+            yield expr, h, k
+            curr = self.next_gaussian_step(expr, h, k, *args, **kwargs)
+            if equals(curr, (expr, h, k)):
+                break
+            expr, h, k = curr
