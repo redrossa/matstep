@@ -360,24 +360,20 @@ class MatrixSimplifier(StepSimplifier):
         in the gaussian elimination.
         """
 
-        if not isinstance(expr, np.ndarray) or h > expr.shape[0] or k > expr.shape[1]:
+        if not isinstance(expr, np.ndarray) or h >= expr.shape[0] or k >= expr.shape[1]:
             return self.rec(expr, *args, **kwargs), h, k
 
-        # find k-th pivot
         k_col = expr[:, [k]]
-        abs_col = abs(k_col)
-        sub_col = abs_col[k:][abs_col[k:] > 0]
+        sub_col = k_col[k:]
+        nonzero_sub_col = sub_col[sub_col != 0]
 
-        if sub_col.size == 0:
-            # lower rows are zero -> no further elimination
-            return self.rec(expr, *args, **kwargs), h, k
+        if nonzero_sub_col.size == 0:
+            # lower row elements in k-th col are zero -> pass to the next column
+            return self.rec(expr, *args, **kwargs), h, k + 1
 
-        i_min = np.nonzero(abs_col[k:])[0][np.argmin(sub_col)] + k
-        i_max = np.argmax(abs_col)
-
-        if expr[i_max][k] == 0:
-            # no pivot in this column -> pass to the next column
-            return self.rec(expr, *args, *kwargs), h, k + 1
+        # find element in k-th column for rows > k closest to 1
+        arr_i_one = np.where(sub_col == 1)[0]
+        i_min = (np.nonzero(sub_col)[0][0] if arr_i_one.size == 0 else arr_i_one[0]) + k
 
         if i_min != h:
             # pivot not at expected row -> swap rows
