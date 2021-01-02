@@ -10,7 +10,6 @@ Goals currently being worked on:
 - Matstep will instead provide matrix computation support using `numpy.ndarray`.
 - Matrix expression operations for `numpy.ndarray`:
     - Row echelon form
-    - Reduced row echelon form support for `sympy.Symbol` types
     - Upper/lower trianglular form
     - Diagonalization
   
@@ -19,7 +18,7 @@ Goals to implement in the future:
 - Calculus module (maybe)
 
 Goals implemented:
-- Reduced row echelon form step-by-step simplifier for matrices (currently only supports numeric types)
+- Reduced row echelon form step-by-step simplifier for matrices
 - Dot product
 - Cross product
 - Determinant function
