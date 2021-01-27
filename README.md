@@ -18,6 +18,8 @@ Goals to implement in the future:
 - Calculus module (maybe)
 
 Goals implemented:
+- Backbone for logical expressions
+- Truth tabulator for logical expressions
 - Reduced row echelon form step-by-step simplifier for matrices
 - Dot product
 - Cross product
