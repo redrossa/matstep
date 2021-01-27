@@ -2,8 +2,6 @@
 
 Matstep is an extensible step-by-step computation library. The library utilizes [pymbolic](https://github.com/inducer/pymbolic)'s expression tree to simplify expressions one step at a time. Initially brought up to find a way to quickly automate printing of matrix computations, matstep supports the simplification of numpy arrays. In addition, the step simplifier is designed to be versatile allowing it to compute any expressions of objects that overload the necessary Python operators.
 
-This project is currently under construction!
-
 ### Project updates:
 
 Goals currently being worked on:
