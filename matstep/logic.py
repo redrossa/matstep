@@ -25,6 +25,41 @@ class LogicalExpression(pymbolic.primitives.Expression):
     def __rshift__(self, other):
         return IfThen(self, other)
 
+    def tabulate(self):
+        """
+        Returns a `pandas.DataFrame` whose headers are the component expressions of the
+        given `expr` including the `expr` itself and whose data are the results of evaluating
+        the column's component expression for each combination of the parameters in `expr`.
+        """
+
+        def contextualize(props, vals):
+            return dict(zip([p.name for p in props], vals))
+
+        def filter_exprs(split_expr):
+            return [*reversed([*filter(lambda it: not isinstance(it, Proposition), split_expr)])]
+
+        def filter_props(split_expr):
+            return sorted([*set(filter(lambda it: isinstance(it, Proposition), split_expr))])
+
+        split_expr = LogicalSplitter()(self)
+        exprs = filter_exprs(split_expr)
+        props = filter_props(split_expr)
+        comb = combination(len(props))
+        evaluator = LogicalEvaluator()
+        truths = []
+
+        for vals in comb:
+            evaluator.context = contextualize(props, vals)
+            truths.append((vals.tolist() + [evaluator(e) for e in exprs]))
+
+        columns = [*props, *exprs]
+        table = pd.DataFrame(truths, columns=columns)
+
+        return table
+
+    def is_equivalent(self, other):
+        return np.array_equal(self.tabulate().values[:, -1], other.tabulate().values[:, -1])
+
 
 class Proposition(LogicalExpression, pymbolic.primitives.Variable):
     """Essentially a `pymbolic.primitives.Variable` with `matstep` compatible operations."""
@@ -100,11 +135,6 @@ class LogicalSplitter(pymbolic.mapper.RecursiveMapper):
         return [expr, *self.rec(expr.condition, *args, **kwargs), *self.rec(expr.then, *args, **kwargs)]
 
 
-p, q, r = Proposition('p'), Proposition('q'), Proposition('r')
-e = p & q | r
-print(LogicalSplitter()(e))
-
-
 class LogicalEvaluator(pymbolic.mapper.evaluator.EvaluationMapper):
     """Evaluator for logical operators."""
 
@@ -125,37 +155,4 @@ def combination(n):
     """Returns a combination of 1 and 0 given `n` parameters."""
 
     return np.array([[int(c) for c in [*('{0:0' + str(n) + 'b}').format(i)]] for i in range(2**n)])
-
-
-def tabulate(expr):
-    """
-    Returns a `pandas.DataFrame` whose headers are the component expressions of the
-    given `expr` including the `expr` itself and whose data are the results of evaluating
-    the column's component expression for each combination of the parameters in `expr`.
-    """
-
-    def contextualize(props, vals):
-        return dict(zip([p.name for p in props], vals))
-
-    def filter_exprs(split_expr):
-        return [*reversed([*filter(lambda it: not isinstance(it, Proposition), split_expr)])]
-
-    def filter_props(split_expr):
-        return sorted([*set(filter(lambda it: isinstance(it, Proposition), split_expr))])
-
-    split_expr = LogicalSplitter()(expr)
-    exprs = filter_exprs(split_expr)
-    props = filter_props(split_expr)
-    comb = combination(len(props))
-    evaluator = LogicalEvaluator()
-    truths = []
-
-    for vals in comb:
-        evaluator.context = contextualize(props, vals)
-        truths.append((vals.tolist() + [evaluator(e) for e in exprs]))
-
-    columns = [*props, *exprs]
-    table = pd.DataFrame(truths, columns=columns)
-
-    return table
 
