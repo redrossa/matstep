@@ -12,11 +12,10 @@ a `Proposition` are:
   any of the above.
 """
 
-from matstep.logic import Proposition, tabulate
+from matstep.logic import Proposition
 
 
 p, q, r = Proposition('p'), Proposition('q'), Proposition('r')
 e = (p | ~(q & ~r)) >> (p & r)
-t = tabulate(e)
 
-print(t.to_markdown())
+print(e.tabulate().to_markdown(index=False))
